@@ -129,14 +129,31 @@ class Machine:
                 index = struct.unpack('!H', code[ip:ip+2])[0]
                 ip += 1
 
-                methodRef = self.current_class.const_pool[index - 1].name_and_type_index
-                nat = self.current_class.const_pool[methodRef - 1]
+                methodRef = self.current_class.const_pool[index - 1]
+                name = self.current_class.const_pool[methodRef.class_index - 1].name
+                natIndex = methodRef.name_and_type_index
+                nat = self.current_class.const_pool[natIndex - 1]
 
-                print(vars(self.current_class.const_pool[self.current_class.const_pool[index - 1].class_index - 1]))
+                print(name)
                 print(vars(nat))
-                frame.stack.append("lel")
+                frame.stack.append("stdout")
             elif inst == Inst.INVOKEVIRTUAL:
-                pass
+                ip += 1
+                index = struct.unpack('!H', code[ip:ip+2])[0]
+                ip += 1
+
+                methodRef = self.current_class.const_pool[index - 1]
+                name = self.current_class.const_pool[methodRef.class_index - 1].name
+                natIndex = methodRef.name_and_type_index
+                nat = self.current_class.const_pool[natIndex - 1]
+
+                if name == 'java/io/PrintStream' and nat.name == 'println':
+                    for i in range(argumentCount(nat.desc)):
+                        print(frame.stack.pop())
+                    stream = frame.stack.pop()
+                
+                print(name)
+                print(vars(nat))
             elif inst == Inst.INVOKESTATIC:
                 ip += 1
                 method_index = struct.unpack('!H', code[ip:ip+2])[0]
