@@ -6,27 +6,31 @@ import io
 from enum import Enum
 
 class Inst(Enum):
-    ICONST_M1    = 0x02
-    ICONST_0     = 0x03
-    ICONST_1     = 0x04
-    ICONST_2     = 0x05
-    ICONST_3     = 0x06
-    ICONST_4     = 0x07
-    ICONST_5     = 0x08
-    ILOAD_0      = 0x1A
-    ILOAD_1      = 0x1B
-    ILOAD_2      = 0x1C
-    ILOAD_3      = 0x1D
-    ISTORE_0     = 0x3B
-    ISTORE_1     = 0x3C
-    ISTORE_2     = 0x3D
-    ISTORE_3     = 0x3E
-    IADD         = 0x60
-    IINC         = 0x84
-    IF_ICMPGE    = 0xA2
-    GOTO         = 0xA7
-    IRET         = 0xAC
-    INVOKESTATIC = 0xB8
+    ICONST_M1     = 0x02
+    ICONST_0      = 0x03
+    ICONST_1      = 0x04
+    ICONST_2      = 0x05
+    ICONST_3      = 0x06
+    ICONST_4      = 0x07
+    ICONST_5      = 0x08
+    ILOAD_0       = 0x1A
+    ILOAD_1       = 0x1B
+    ILOAD_2       = 0x1C
+    ILOAD_3       = 0x1D
+    ISTORE_0      = 0x3B
+    ISTORE_1      = 0x3C
+    ISTORE_2      = 0x3D
+    ISTORE_3      = 0x3E
+    POP           = 0x57
+    IADD          = 0x60
+    IINC          = 0x84
+    IF_ICMPGE     = 0xA2
+    GOTO          = 0xA7
+    IRET          = 0xAC
+    RETURN        = 0xB1
+    GETSTATIC     = 0xB2
+    INVOKEVIRTUAL = 0xB6
+    INVOKESTATIC  = 0xB8
 
 def argumentCount(desc):
     i = 0
@@ -84,6 +88,8 @@ class Machine:
             elif inst == Inst.ISTORE_3:
                 val = frame.stack.pop()
                 frame.set_local(3, val)
+            elif inst == Inst.POP:
+                frame.stack.pop()
             elif inst == Inst.IADD:
                 return frame.stack.pop() + frame.stack.pop()
             elif inst == Inst.IINC:
@@ -116,15 +122,33 @@ class Machine:
                 print('goto', branch)
             elif inst == Inst.IRET:
                 return frame.stack.pop()
+            elif inst == Inst.RETURN:
+                return
+            elif inst == Inst.GETSTATIC:
+                ip += 1
+                index = struct.unpack('!H', code[ip:ip+2])[0]
+                ip += 1
+
+                methodRef = self.current_class.const_pool[index - 1].name_and_type_index
+                nat = self.current_class.const_pool[methodRef - 1]
+
+                print(vars(self.current_class.const_pool[self.current_class.const_pool[index - 1].class_index - 1]))
+                print(vars(nat))
+                frame.stack.append("lel")
+            elif inst == Inst.INVOKEVIRTUAL:
+                pass
             elif inst == Inst.INVOKESTATIC:
                 ip += 1
                 method_index = struct.unpack('!H', code[ip:ip+2])[0]
                 ip += 1
 
-                methodRef = self.current_class.const_pool[method_index - 1].name_and_type_index
-                nat = self.current_class.const_pool[methodRef - 1]
+                methodRef = self.current_class.const_pool[method_index - 1]
+                cname = self.current_class.const_pool[methodRef.class_index - 1].name
+                natIndex = methodRef.name_and_type_index
+                nat = self.current_class.const_pool[natIndex - 1]
 
-                for m in self.current_class.methods:
+                cl = self.class_files[cname]
+                for m in cl.methods:
                     if m.name == nat.name and m.desc == nat.desc:
                         newCode = m.find_attr('Code').info
                         newCode = CodeAttr().from_reader(io.BytesIO(newCode))

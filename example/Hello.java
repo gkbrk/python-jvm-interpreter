@@ -6,7 +6,7 @@ class Hello {
     public static final String greeting = "Hi";
 
     public static void main(String[] args) {
-        addNumbers(3, 4);
+        TestImport.getBestNumber();
     }
 
     public static int addNumbers(int a, int b) {
