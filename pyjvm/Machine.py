@@ -186,7 +186,9 @@ class Machine:
                     v1 = str(frame.stack.pop())
                     frame.stack.append(v1 + v2)
                 elif name == 'java/lang/StringBuilder' and nat.name == 'toString':
-                    frame.stack.append(frame.stack.pop())
+                    v1 = frame.stack.pop()
+                    frame.stack.pop()
+                    frame.stack.append(v1)
                 else:
                     for i in range(argumentCount(nat.desc)):
                         frame.stack.pop()
@@ -230,6 +232,11 @@ class Machine:
                 ip += 1
 
                 methodRef = self.current_class.const_pool[index - 1]
+
+                if methodRef.name == 'java/lang/StringBuilder':
+                    frame.stack.append("")
+                else:
+                    frame.stack.append(None)
 
                 #print(vars(methodRef))
 
