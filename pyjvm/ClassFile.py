@@ -1,17 +1,31 @@
 import struct
 from .CPInfo import CPInfo
+from .CodeAttr import CodeAttr
+from .Frame import Frame
 from .FieldInfo import FieldInfo
 from .AttributeInfo import AttributeInfo
 from .jstdlib.JavaClass import JavaClass
 import io
 
+def argumentCount(desc):
+    arg = desc.split(')', 2)[0][1:]
+    i = 0
+
+    parsingClass = False
+    for c in arg:
+        if parsingClass:
+            if c == ';':
+                parsingClass = False
+            continue
+        if c == 'L':
+            parsingClass = True
+        i += 1
+
+    return i
+
 class ClassFile(JavaClass):
     def __init__(self):
-        self.class_name = ''
-        self.super_class = ''
-
-    def name(self):
-        return self.class_name
+        super().__init__()
 
     def canHandleMethod(self, name, desc):
         for m in self.methods:
@@ -23,14 +37,15 @@ class ClassFile(JavaClass):
             if m.name == name and m.desc == desc:
                 newCode = m.find_attr('Code').info
                 newCode = CodeAttr().from_reader(io.BytesIO(newCode))
-                newFrame = Frame(newCode.max_stack, newCode.max_locals, cl)
+                newFrame = Frame(newCode.max_stack, newCode.max_locals, self)
 
-                for i in range(argumentCount(nat.desc)):
+                for i in range(argumentCount(desc)):
                     newFrame.set_local(i, frame.stack.pop())
 
-                frame.stack.append(self.execute_code(newFrame, newCode.code))
+                frame.stack.append(machine.execute_code(newFrame, newCode.code))
 
     def from_file(self, path):
+        self.file_path = path
         with open(path, 'rb') as cf:
             self.magic = struct.unpack('!I', cf.read(4))
             self.minor, self.major = struct.unpack('!HH', cf.read(4))

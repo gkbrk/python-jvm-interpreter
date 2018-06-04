@@ -19,7 +19,7 @@ def argumentCount(desc):
 class PrintStream(JavaClass):
     def __init__(self):
         super().__init__()
-        pass
+        self.class_name = 'java/io/PrintStream'
 
     def canHandleMethod(self, name, desc):
         return name == 'println'

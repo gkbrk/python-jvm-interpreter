@@ -18,6 +18,7 @@ class Inst(Enum):
     ICONST_4      = 0x07
     ICONST_5      = 0x08
     BIPUSH        = 0x10
+    SIPUSH        = 0x11
     LDC           = 0x12
     ILOAD_0       = 0x1A
     ILOAD_1       = 0x1B
@@ -42,6 +43,8 @@ class Inst(Enum):
     IRET          = 0xAC
     RETURN        = 0xB1
     GETSTATIC     = 0xB2
+    GETFIELD      = 0xB4
+    PUTFIELD      = 0xB5
     INVOKEVIRTUAL = 0xB6
     INVOKESPECIAL = 0xB7
     INVOKESTATIC  = 0xB8
@@ -101,6 +104,12 @@ class Machine:
                 byte = code[ip]
 
                 frame.stack.append(byte)
+            elif inst == Inst.SIPUSH:
+                ip += 1
+                short = struct.unpack('!h', code[ip:ip+2])[0]
+                ip += 1
+
+                frame.stack.append(short)
             elif inst == Inst.LDC:
                 ip += 1
                 index = code[ip]
@@ -143,7 +152,7 @@ class Machine:
                 frame.stack.append(val)
                 frame.stack.append(val)
             elif inst == Inst.IADD:
-                return frame.stack.pop() + frame.stack.pop()
+                frame.stack.append(frame.stack.pop() + frame.stack.pop())
             elif inst == Inst.IINC:
                 ip += 1
                 index, const = struct.unpack('!Bb', code[ip:ip+2])
@@ -189,6 +198,36 @@ class Machine:
                 #print(name)
                 #print(vars(nat))
                 frame.stack.append(PrintStream())
+            elif inst == Inst.GETFIELD:
+                ip += 1
+                index = struct.unpack('!H', code[ip:ip+2])[0]
+                ip += 1
+
+                ref = frame.current_class.const_pool[index - 1]
+                name = frame.current_class.const_pool[ref.class_index - 1].name
+                natIndex = ref.name_and_type_index
+                nat = frame.current_class.const_pool[natIndex - 1]
+
+                #print(vars(nat))
+
+                obj = frame.stack.pop()
+                #print(obj)
+                frame.stack.append(obj.get_field(nat.name))
+            elif inst == Inst.PUTFIELD:
+                ip += 1
+                index = struct.unpack('!H', code[ip:ip+2])[0]
+                ip += 1
+
+                ref = frame.current_class.const_pool[index - 1]
+                name = frame.current_class.const_pool[ref.class_index - 1].name
+                natIndex = ref.name_and_type_index
+                nat = frame.current_class.const_pool[natIndex - 1]
+
+                #print(vars(nat))
+
+                value = frame.stack.pop()
+                obj = frame.stack.pop()
+                obj.set_field(nat.name, value)
             elif inst == Inst.INVOKEVIRTUAL:
                 ip += 1
                 index = struct.unpack('!H', code[ip:ip+2])[0]
@@ -270,6 +309,8 @@ class Machine:
 
                 if methodRef.name in self.class_files:
                     obj = self.class_files[methodRef.name].__class__()
+                    if self.class_files[methodRef.name].file_path:
+                        obj.from_file(self.class_files[methodRef.name].file_path)
                     frame.stack.append(obj)
                 else:
                     frame.stack.append(None)
