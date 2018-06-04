@@ -6,13 +6,22 @@ class Hello {
     public static final String greeting = "Hi";
 
     public static void main(String[] args) {
-        int a = 46462;
-        int b = 8;
-        System.out.println("Hello, World!");
-        System.out.println(addNumbers(a, b));
+        addNumbers(3, 4);
     }
 
     public static int addNumbers(int a, int b) {
-        return a + b;
+        for (int i = 0; i < b; i++) {
+            a++;
+        }
+
+        return a;
+    }
+
+    public static int subtractNum(int a, int b) {
+        for (int i = 0; i < b; i++) {
+            a--;
+        }
+
+        return a;
     }
 }

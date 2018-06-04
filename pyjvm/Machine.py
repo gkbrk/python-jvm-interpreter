@@ -6,14 +6,26 @@ import io
 from enum import Enum
 
 class Inst(Enum):
-    ICONST_4 = 0x07
-    ICONST_5 = 0x08
-    ILOAD_0  = 0x1A
-    ILOAD_1  = 0x1B
-    ILOAD_2  = 0x1C
-    ILOAD_3  = 0x1D
-    IADD     = 0x60
-    IRET     = 0xAC
+    ICONST_M1 = 0x02
+    ICONST_0  = 0x03
+    ICONST_1  = 0x04
+    ICONST_2  = 0x05
+    ICONST_3  = 0x06
+    ICONST_4  = 0x07
+    ICONST_5  = 0x08
+    ILOAD_0   = 0x1A
+    ILOAD_1   = 0x1B
+    ILOAD_2   = 0x1C
+    ILOAD_3   = 0x1D
+    ISTORE_0  = 0x3B
+    ISTORE_1  = 0x3C
+    ISTORE_2  = 0x3D
+    ISTORE_3  = 0x3E
+    IADD      = 0x60
+    IINC      = 0x84
+    IF_ICMPGE = 0xA2
+    GOTO      = 0xA7
+    IRET      = 0xAC
 
 class Machine:
     def __init__(self):
@@ -24,10 +36,22 @@ class Machine:
         self.class_files[c.class_name] = c
 
     def execute_code(self, frame, code):
+        ip = 0
         while True:
-            inst = Inst(code.read(1)[0])
+            inst = Inst(code[ip])
+            print(inst)
 
-            if inst == Inst.ICONST_4:
+            if inst == Inst.ICONST_M1:
+                frame.stack.append(-1)
+            elif inst == Inst.ICONST_0:
+                frame.stack.append(0)
+            elif inst == Inst.ICONST_1:
+                frame.stack.append(1)
+            elif inst == Inst.ICONST_2:
+                frame.stack.append(2)
+            elif inst == Inst.ICONST_3:
+                frame.stack.append(3)
+            elif inst == Inst.ICONST_4:
                 frame.stack.append(4)
             elif inst == Inst.ICONST_5:
                 frame.stack.append(5)
@@ -39,10 +63,54 @@ class Machine:
                 frame.stack.append(frame.get_local(2))
             elif inst == Inst.ILOAD_3:
                 frame.stack.append(frame.get_local(3))
+            elif inst == Inst.ISTORE_0:
+                val = frame.stack.pop()
+                frame.set_local(0, val)
+            elif inst == Inst.ISTORE_1:
+                val = frame.stack.pop()
+                frame.set_local(1, val)
+            elif inst == Inst.ISTORE_2:
+                val = frame.stack.pop()
+                frame.set_local(2, val)
+            elif inst == Inst.ISTORE_3:
+                val = frame.stack.pop()
+                frame.set_local(3, val)
             elif inst == Inst.IADD:
                 return frame.stack.pop() + frame.stack.pop()
+            elif inst == Inst.IINC:
+                ip += 1
+                index, const = struct.unpack('!Bb', code[ip:ip+2])
+                ip += 1
+
+                print('iinc', index, const)
+                frame.set_local(index, frame.get_local(index) + const)
+            elif inst == Inst.IF_ICMPGE:
+                v2 = frame.stack.pop()
+                v1 = frame.stack.pop()
+
+                ip += 1
+                branch = struct.unpack('!h', code[ip:ip+2])[0]
+                print('cmp', branch)
+
+                if v1 >= v2:
+                    ip -= 2
+                    ip += branch
+                else:
+                    ip += 1
+
+            elif inst == Inst.GOTO:
+                ip += 1
+                branch = struct.unpack('!h', code[ip:ip+2])[0]
+
+                ip -= 2
+                ip += branch
+                print('goto', branch)
             elif inst == Inst.IRET:
                 return frame.stack.pop()
+
+            print(frame.stack, frame.locals)
+
+            ip += 1
 
     def call_function(self, methodName, *args):
         cname = '/'.join(methodName.split('/')[:-1])
@@ -58,7 +126,7 @@ class Machine:
                     frame = Frame(code.max_stack, code.max_locals)
                     for i, arg in enumerate(args):
                         frame.set_local(i, arg)
-                    return self.execute_code(frame, io.BytesIO(code.code))
+                    return self.execute_code(frame, code.code)
 
     def dump(self):
         print('Machine Dump')
