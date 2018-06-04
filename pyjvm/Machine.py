@@ -13,6 +13,8 @@ class Inst(Enum):
     ICONST_3      = 0x06
     ICONST_4      = 0x07
     ICONST_5      = 0x08
+    BIPUSH        = 0x10
+    LDC           = 0x12
     ILOAD_0       = 0x1A
     ILOAD_1       = 0x1B
     ILOAD_2       = 0x1C
@@ -33,12 +35,20 @@ class Inst(Enum):
     INVOKESTATIC  = 0xB8
 
 def argumentCount(desc):
+    arg = desc.split(')', 2)[0][1:]
     i = 0
-    for c in desc:
-        if c == ')':
-            return i
-        elif c != '(':
-            i += 1
+
+    parsingClass = False
+    for c in arg:
+        if parsingClass:
+            if c == ';':
+                parsingClass = False
+            continue
+        if c == 'L':
+            parsingClass = True
+        i += 1
+
+    return i
 
 class Machine:
     def __init__(self):
@@ -52,7 +62,7 @@ class Machine:
         ip = 0
         while True:
             inst = Inst(code[ip])
-            print(inst)
+            #print(inst)
 
             if inst == Inst.ICONST_M1:
                 frame.stack.append(-1)
@@ -68,6 +78,16 @@ class Machine:
                 frame.stack.append(4)
             elif inst == Inst.ICONST_5:
                 frame.stack.append(5)
+            elif inst == Inst.BIPUSH:
+                ip += 1
+                byte = code[ip]
+
+                frame.stack.append(byte)
+            elif inst == Inst.LDC:
+                ip += 1
+                index = code[ip]
+
+                frame.stack.append(self.current_class.const_pool[index - 1].string)
             elif inst == Inst.ILOAD_0:
                 frame.stack.append(frame.get_local(0))
             elif inst == Inst.ILOAD_1:
@@ -97,7 +117,7 @@ class Machine:
                 index, const = struct.unpack('!Bb', code[ip:ip+2])
                 ip += 1
 
-                print('iinc', index, const)
+                #print('iinc', index, const)
                 frame.set_local(index, frame.get_local(index) + const)
             elif inst == Inst.IF_ICMPGE:
                 v2 = frame.stack.pop()
@@ -105,7 +125,7 @@ class Machine:
 
                 ip += 1
                 branch = struct.unpack('!h', code[ip:ip+2])[0]
-                print('cmp', branch)
+                #print('cmp', branch)
 
                 if v1 >= v2:
                     ip -= 2
@@ -119,7 +139,7 @@ class Machine:
 
                 ip -= 2
                 ip += branch
-                print('goto', branch)
+                #print('goto', branch)
             elif inst == Inst.IRET:
                 return frame.stack.pop()
             elif inst == Inst.RETURN:
@@ -134,8 +154,8 @@ class Machine:
                 natIndex = methodRef.name_and_type_index
                 nat = self.current_class.const_pool[natIndex - 1]
 
-                print(name)
-                print(vars(nat))
+                #print(name)
+                #print(vars(nat))
                 frame.stack.append("stdout")
             elif inst == Inst.INVOKEVIRTUAL:
                 ip += 1
@@ -147,13 +167,13 @@ class Machine:
                 natIndex = methodRef.name_and_type_index
                 nat = self.current_class.const_pool[natIndex - 1]
 
+                #print(name)
+                #print(vars(nat))
+
                 if name == 'java/io/PrintStream' and nat.name == 'println':
                     for i in range(argumentCount(nat.desc)):
                         print(frame.stack.pop())
                     stream = frame.stack.pop()
-                
-                print(name)
-                print(vars(nat))
             elif inst == Inst.INVOKESTATIC:
                 ip += 1
                 method_index = struct.unpack('!H', code[ip:ip+2])[0]
@@ -176,7 +196,7 @@ class Machine:
 
                         frame.stack.append(self.execute_code(newFrame, newCode.code))
 
-            print(frame.stack, frame.locals)
+            #print(frame.stack, frame.locals)
 
             ip += 1
 
