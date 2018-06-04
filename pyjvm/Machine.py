@@ -24,6 +24,7 @@ class Inst(Enum):
     ISTORE_2      = 0x3D
     ISTORE_3      = 0x3E
     POP           = 0x57
+    DUP           = 0x59
     IADD          = 0x60
     IINC          = 0x84
     IF_ICMPGE     = 0xA2
@@ -32,7 +33,9 @@ class Inst(Enum):
     RETURN        = 0xB1
     GETSTATIC     = 0xB2
     INVOKEVIRTUAL = 0xB6
+    INVOKESPECIAL = 0xB7
     INVOKESTATIC  = 0xB8
+    NEW           = 0xBB
 
 def argumentCount(desc):
     arg = desc.split(')', 2)[0][1:]
@@ -110,6 +113,10 @@ class Machine:
                 frame.set_local(3, val)
             elif inst == Inst.POP:
                 frame.stack.pop()
+            elif inst == Inst.DUP:
+                val = frame.stack.pop()
+                frame.stack.append(val)
+                frame.stack.append(val)
             elif inst == Inst.IADD:
                 return frame.stack.pop() + frame.stack.pop()
             elif inst == Inst.IINC:
@@ -174,6 +181,28 @@ class Machine:
                     for i in range(argumentCount(nat.desc)):
                         print(frame.stack.pop())
                     stream = frame.stack.pop()
+                elif name == 'java/lang/StringBuilder' and nat.name == 'append':
+                    v2 = str(frame.stack.pop())
+                    v1 = str(frame.stack.pop())
+                    frame.stack.append(v1 + v2)
+                elif name == 'java/lang/StringBuilder' and nat.name == 'toString':
+                    frame.stack.append(frame.stack.pop())
+                else:
+                    for i in range(argumentCount(nat.desc)):
+                        frame.stack.pop()
+            elif inst == Inst.INVOKESPECIAL:
+                ip += 1
+                index = struct.unpack('!H', code[ip:ip+2])[0]
+                ip += 1
+
+                methodRef = self.current_class.const_pool[index - 1]
+                name = self.current_class.const_pool[methodRef.class_index - 1].name
+                natIndex = methodRef.name_and_type_index
+                nat = self.current_class.const_pool[natIndex - 1]
+
+                #print(vars(methodRef))
+                #print(vars(nat))
+                #print(name)
             elif inst == Inst.INVOKESTATIC:
                 ip += 1
                 method_index = struct.unpack('!H', code[ip:ip+2])[0]
@@ -195,6 +224,14 @@ class Machine:
                             newFrame.set_local(i, frame.stack.pop())
 
                         frame.stack.append(self.execute_code(newFrame, newCode.code))
+            elif inst == Inst.NEW:
+                ip += 1
+                index = struct.unpack('!H', code[ip:ip+2])[0]
+                ip += 1
+
+                methodRef = self.current_class.const_pool[index - 1]
+
+                #print(vars(methodRef))
 
             #print(frame.stack, frame.locals)
 
