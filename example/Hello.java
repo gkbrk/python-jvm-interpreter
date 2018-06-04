@@ -10,11 +10,7 @@ class Hello {
     }
 
     public static int addNumbers(int a, int b) {
-        for (int i = 0; i < b; i++) {
-            a++;
-        }
-
-        return a;
+        return a + b;
     }
 
     public static int subtractNum(int a, int b) {
@@ -23,5 +19,9 @@ class Hello {
         }
 
         return a;
+    }
+
+    public static int addOne(int a) {
+        return addNumbers(a, 1);
     }
 }

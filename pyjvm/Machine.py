@@ -6,26 +6,35 @@ import io
 from enum import Enum
 
 class Inst(Enum):
-    ICONST_M1 = 0x02
-    ICONST_0  = 0x03
-    ICONST_1  = 0x04
-    ICONST_2  = 0x05
-    ICONST_3  = 0x06
-    ICONST_4  = 0x07
-    ICONST_5  = 0x08
-    ILOAD_0   = 0x1A
-    ILOAD_1   = 0x1B
-    ILOAD_2   = 0x1C
-    ILOAD_3   = 0x1D
-    ISTORE_0  = 0x3B
-    ISTORE_1  = 0x3C
-    ISTORE_2  = 0x3D
-    ISTORE_3  = 0x3E
-    IADD      = 0x60
-    IINC      = 0x84
-    IF_ICMPGE = 0xA2
-    GOTO      = 0xA7
-    IRET      = 0xAC
+    ICONST_M1    = 0x02
+    ICONST_0     = 0x03
+    ICONST_1     = 0x04
+    ICONST_2     = 0x05
+    ICONST_3     = 0x06
+    ICONST_4     = 0x07
+    ICONST_5     = 0x08
+    ILOAD_0      = 0x1A
+    ILOAD_1      = 0x1B
+    ILOAD_2      = 0x1C
+    ILOAD_3      = 0x1D
+    ISTORE_0     = 0x3B
+    ISTORE_1     = 0x3C
+    ISTORE_2     = 0x3D
+    ISTORE_3     = 0x3E
+    IADD         = 0x60
+    IINC         = 0x84
+    IF_ICMPGE    = 0xA2
+    GOTO         = 0xA7
+    IRET         = 0xAC
+    INVOKESTATIC = 0xB8
+
+def argumentCount(desc):
+    i = 0
+    for c in desc:
+        if c == ')':
+            return i
+        elif c != '(':
+            i += 1
 
 class Machine:
     def __init__(self):
@@ -107,6 +116,24 @@ class Machine:
                 print('goto', branch)
             elif inst == Inst.IRET:
                 return frame.stack.pop()
+            elif inst == Inst.INVOKESTATIC:
+                ip += 1
+                method_index = struct.unpack('!H', code[ip:ip+2])[0]
+                ip += 1
+
+                methodRef = self.current_class.const_pool[method_index - 1].name_and_type_index
+                nat = self.current_class.const_pool[methodRef - 1]
+
+                for m in self.current_class.methods:
+                    if m.name == nat.name and m.desc == nat.desc:
+                        newCode = m.find_attr('Code').info
+                        newCode = CodeAttr().from_reader(io.BytesIO(newCode))
+                        newFrame = Frame(newCode.max_stack, newCode.max_locals)
+
+                        for i in range(argumentCount(nat.desc)):
+                            newFrame.set_local(i, frame.stack.pop())
+
+                        frame.stack.append(self.execute_code(newFrame, newCode.code))
 
             print(frame.stack, frame.locals)
 
@@ -123,6 +150,7 @@ class Machine:
                     code = m.find_attr('Code').info
                     code = CodeAttr().from_reader(io.BytesIO(code))
 
+                    self.current_class = cf
                     frame = Frame(code.max_stack, code.max_locals)
                     for i, arg in enumerate(args):
                         frame.set_local(i, arg)
