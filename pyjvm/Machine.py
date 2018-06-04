@@ -43,6 +43,7 @@ class Inst(Enum):
     IRET          = 0xAC
     RETURN        = 0xB1
     GETSTATIC     = 0xB2
+    PUTSTATIC     = 0xB3
     GETFIELD      = 0xB4
     PUTFIELD      = 0xB5
     INVOKEVIRTUAL = 0xB6
@@ -195,9 +196,32 @@ class Machine:
                 natIndex = methodRef.name_and_type_index
                 nat = frame.current_class.const_pool[natIndex - 1]
 
+                if name in self.class_files:
+                    cl = self.class_files[name]
+                    if not cl.initialized:
+                        cl.initialized = True
+                        cl.handleMethod('<clinit>', '()V', frame, code, self, ip)
+                    frame.stack.append(cl.get_field(nat.name))
+
                 #print(name)
                 #print(vars(nat))
-                frame.stack.append(PrintStream())
+                #frame.stack.append(PrintStream())
+            elif inst == Inst.PUTSTATIC:
+                ip += 1
+                index = struct.unpack('!H', code[ip:ip+2])[0]
+                ip += 1
+
+                methodRef = frame.current_class.const_pool[index - 1]
+                name = frame.current_class.const_pool[methodRef.class_index - 1].name
+                natIndex = methodRef.name_and_type_index
+                nat = frame.current_class.const_pool[natIndex - 1]
+
+                if name in self.class_files:
+                    cl = self.class_files[name]
+                    if not cl.initialized:
+                        cl.initialized = True
+                        cl.handleMethod('<clinit>', '()V', frame, code, self, ip)
+                    cl.set_field(nat.name, frame.stack.pop())
             elif inst == Inst.GETFIELD:
                 ip += 1
                 index = struct.unpack('!H', code[ip:ip+2])[0]

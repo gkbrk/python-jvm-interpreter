@@ -1,9 +1,10 @@
 from .JavaClass import JavaClass
+from .PrintStream import PrintStream
 
 class System(JavaClass):
     def __init__(self):
         super().__init__()
-        pass
+        self.instance_fields['out'] = PrintStream()
 
     def canHandleMethod(self, name, desc):
         return name in ['append', 'toString']

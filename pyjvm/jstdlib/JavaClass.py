@@ -7,6 +7,7 @@ class JavaClass:
         self.instance_fields = {}
         self.file_path = None
         self.class_name = 'java/lang/Object'
+        self.initialized = False
 
     def name(self):
         return self.class_name

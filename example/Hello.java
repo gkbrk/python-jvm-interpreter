@@ -6,6 +6,11 @@ class Hello {
     public static final String greeting = "Hi";
 
     public static void main(String[] args) {
+        TestImport.runA();
+        TestImport.runA();
+        TestImport.runA();
+        TestImport.runA();
+        TestImport.runA();
         TestImport t = new TestImport();
         for (int i = 0; i < 5; i++) {
             System.out.println("Test " + i);
