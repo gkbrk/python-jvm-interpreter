@@ -1,6 +1,10 @@
 from .ClassFile import ClassFile
 from .CodeAttr import CodeAttr
 from .Frame import Frame
+from .jstdlib.JavaClass import JavaClass
+from .jstdlib.PrintStream import PrintStream
+from .jstdlib.StringBuilder import StringBuilder
+from .jstdlib.System import System
 import struct
 import io
 from enum import Enum
@@ -19,10 +23,16 @@ class Inst(Enum):
     ILOAD_1       = 0x1B
     ILOAD_2       = 0x1C
     ILOAD_3       = 0x1D
+    ALOAD_0       = 0x2A
+    ALOAD_1       = 0x2B
     ISTORE_0      = 0x3B
     ISTORE_1      = 0x3C
     ISTORE_2      = 0x3D
     ISTORE_3      = 0x3E
+    ASTORE_0      = 0x4B
+    ASTORE_1      = 0x4C
+    ASTORE_2      = 0x4D
+    ASTORE_3      = 0x4E
     POP           = 0x57
     DUP           = 0x59
     IADD          = 0x60
@@ -57,6 +67,11 @@ class Machine:
     def __init__(self):
         self.class_files = {}
 
+        self.class_files['java/lang/Object'] = JavaClass()
+        self.class_files['java/io/PrintStream'] = PrintStream()
+        self.class_files['java/lang/StringBuilder'] = StringBuilder()
+        self.class_files['java/lang/System'] = System()
+
     def load_class_file(self, path):
         c = ClassFile().from_file(path)
         self.class_files[c.class_name] = c
@@ -90,7 +105,7 @@ class Machine:
                 ip += 1
                 index = code[ip]
 
-                frame.stack.append(self.current_class.const_pool[index - 1].string)
+                frame.stack.append(frame.current_class.const_pool[index - 1].string)
             elif inst == Inst.ILOAD_0:
                 frame.stack.append(frame.get_local(0))
             elif inst == Inst.ILOAD_1:
@@ -99,6 +114,10 @@ class Machine:
                 frame.stack.append(frame.get_local(2))
             elif inst == Inst.ILOAD_3:
                 frame.stack.append(frame.get_local(3))
+            elif inst == Inst.ALOAD_0:
+                frame.stack.append(frame.get_local(0))
+            elif inst == Inst.ALOAD_1:
+                frame.stack.append(frame.get_local(1))
             elif inst == Inst.ISTORE_0:
                 val = frame.stack.pop()
                 frame.set_local(0, val)
@@ -111,6 +130,12 @@ class Machine:
             elif inst == Inst.ISTORE_3:
                 val = frame.stack.pop()
                 frame.set_local(3, val)
+            elif inst == Inst.ASTORE_0:
+                obj = frame.stack.pop()
+                frame.set_local(0, obj)
+            elif inst == Inst.ASTORE_1:
+                obj = frame.stack.pop()
+                frame.set_local(1, obj)
             elif inst == Inst.POP:
                 frame.stack.pop()
             elif inst == Inst.DUP:
@@ -156,71 +181,81 @@ class Machine:
                 index = struct.unpack('!H', code[ip:ip+2])[0]
                 ip += 1
 
-                methodRef = self.current_class.const_pool[index - 1]
-                name = self.current_class.const_pool[methodRef.class_index - 1].name
+                methodRef = frame.current_class.const_pool[index - 1]
+                name = frame.current_class.const_pool[methodRef.class_index - 1].name
                 natIndex = methodRef.name_and_type_index
-                nat = self.current_class.const_pool[natIndex - 1]
+                nat = frame.current_class.const_pool[natIndex - 1]
 
                 #print(name)
                 #print(vars(nat))
-                frame.stack.append("stdout")
+                frame.stack.append(PrintStream())
             elif inst == Inst.INVOKEVIRTUAL:
                 ip += 1
                 index = struct.unpack('!H', code[ip:ip+2])[0]
                 ip += 1
 
-                methodRef = self.current_class.const_pool[index - 1]
-                name = self.current_class.const_pool[methodRef.class_index - 1].name
+                methodRef = frame.current_class.const_pool[index - 1]
+                name = frame.current_class.const_pool[methodRef.class_index - 1].name
                 natIndex = methodRef.name_and_type_index
-                nat = self.current_class.const_pool[natIndex - 1]
+                nat = frame.current_class.const_pool[natIndex - 1]
 
                 #print(name)
                 #print(vars(nat))
 
-                if name == 'java/io/PrintStream' and nat.name == 'println':
-                    for i in range(argumentCount(nat.desc)):
-                        print(frame.stack.pop())
-                    stream = frame.stack.pop()
-                elif name == 'java/lang/StringBuilder' and nat.name == 'append':
-                    v2 = str(frame.stack.pop())
-                    v1 = str(frame.stack.pop())
-                    frame.stack.append(v1 + v2)
-                elif name == 'java/lang/StringBuilder' and nat.name == 'toString':
-                    v1 = frame.stack.pop()
-                    frame.stack.pop()
-                    frame.stack.append(v1)
+                if name in self.class_files:
+                    cl = self.class_files[name]
+                    if cl.canHandleMethod(nat.name, nat.desc):
+                        cl.handleMethod(nat.name, nat.desc, frame, code, self, ip)
                 else:
                     for i in range(argumentCount(nat.desc)):
                         frame.stack.pop()
+                    frame.stack.pop()
             elif inst == Inst.INVOKESPECIAL:
                 ip += 1
                 index = struct.unpack('!H', code[ip:ip+2])[0]
                 ip += 1
 
-                methodRef = self.current_class.const_pool[index - 1]
-                name = self.current_class.const_pool[methodRef.class_index - 1].name
+                methodRef = frame.current_class.const_pool[index - 1]
+                name = frame.current_class.const_pool[methodRef.class_index - 1].name
                 natIndex = methodRef.name_and_type_index
-                nat = self.current_class.const_pool[natIndex - 1]
+                nat = frame.current_class.const_pool[natIndex - 1]
 
                 #print(vars(methodRef))
                 #print(vars(nat))
                 #print(name)
+
+                if name in self.class_files:
+                    cl = self.class_files[name]
+                    for m in cl.methods:
+                        if m.name == nat.name and m.desc == nat.desc:
+                            newCode = m.find_attr('Code').info
+                            newCode = CodeAttr().from_reader(io.BytesIO(newCode))
+                            newFrame = Frame(newCode.max_stack, newCode.max_locals, cl)
+
+                            for i in range(argumentCount(nat.desc)):
+                                newFrame.set_local(i, frame.stack.pop())
+
+                            frame.stack.append(self.execute_code(newFrame, newCode.code))
             elif inst == Inst.INVOKESTATIC:
                 ip += 1
                 method_index = struct.unpack('!H', code[ip:ip+2])[0]
                 ip += 1
 
-                methodRef = self.current_class.const_pool[method_index - 1]
-                cname = self.current_class.const_pool[methodRef.class_index - 1].name
+                methodRef = frame.current_class.const_pool[method_index - 1]
+                cname = frame.current_class.const_pool[methodRef.class_index - 1].name
                 natIndex = methodRef.name_and_type_index
-                nat = self.current_class.const_pool[natIndex - 1]
+                nat = frame.current_class.const_pool[natIndex - 1]
+
+                #print(vars(methodRef))
+                #print(vars(nat))
+                #print(cname)
 
                 cl = self.class_files[cname]
                 for m in cl.methods:
                     if m.name == nat.name and m.desc == nat.desc:
                         newCode = m.find_attr('Code').info
                         newCode = CodeAttr().from_reader(io.BytesIO(newCode))
-                        newFrame = Frame(newCode.max_stack, newCode.max_locals)
+                        newFrame = Frame(newCode.max_stack, newCode.max_locals, cl)
 
                         for i in range(argumentCount(nat.desc)):
                             newFrame.set_local(i, frame.stack.pop())
@@ -231,10 +266,11 @@ class Machine:
                 index = struct.unpack('!H', code[ip:ip+2])[0]
                 ip += 1
 
-                methodRef = self.current_class.const_pool[index - 1]
+                methodRef = frame.current_class.const_pool[index - 1]
 
-                if methodRef.name == 'java/lang/StringBuilder':
-                    frame.stack.append("")
+                if methodRef.name in self.class_files:
+                    obj = self.class_files[methodRef.name].__class__()
+                    frame.stack.append(obj)
                 else:
                     frame.stack.append(None)
 
@@ -255,8 +291,7 @@ class Machine:
                     code = m.find_attr('Code').info
                     code = CodeAttr().from_reader(io.BytesIO(code))
 
-                    self.current_class = cf
-                    frame = Frame(code.max_stack, code.max_locals)
+                    frame = Frame(code.max_stack, code.max_locals, cf)
                     for i, arg in enumerate(args):
                         frame.set_local(i, arg)
                     return self.execute_code(frame, code.code)

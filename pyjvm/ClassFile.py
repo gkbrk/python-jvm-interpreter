@@ -2,11 +2,33 @@ import struct
 from .CPInfo import CPInfo
 from .FieldInfo import FieldInfo
 from .AttributeInfo import AttributeInfo
+from .jstdlib.JavaClass import JavaClass
+import io
 
-class ClassFile:
+class ClassFile(JavaClass):
     def __init__(self):
         self.class_name = ''
         self.super_class = ''
+
+    def name(self):
+        return self.class_name
+
+    def canHandleMethod(self, name, desc):
+        for m in self.methods:
+            if m.name == name and m.desc == desc:
+                return True
+
+    def handleMethod(self, name, desc, frame, code, machine, ip):
+        for m in self.methods:
+            if m.name == name and m.desc == desc:
+                newCode = m.find_attr('Code').info
+                newCode = CodeAttr().from_reader(io.BytesIO(newCode))
+                newFrame = Frame(newCode.max_stack, newCode.max_locals, cl)
+
+                for i in range(argumentCount(nat.desc)):
+                    newFrame.set_local(i, frame.stack.pop())
+
+                frame.stack.append(self.execute_code(newFrame, newCode.code))
 
     def from_file(self, path):
         with open(path, 'rb') as cf:

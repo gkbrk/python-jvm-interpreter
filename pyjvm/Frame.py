@@ -1,7 +1,8 @@
 class Frame:
-    def __init__(self, maxStack, maxLocal):
+    def __init__(self, maxStack, maxLocal, current_class):
         self.stack  = []
         self.locals = [0 for i in range(maxLocal)]
+        self.current_class = current_class
 
     def set_local(self, i, value):
         self.locals[i] = value
