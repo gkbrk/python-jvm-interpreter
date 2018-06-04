@@ -37,8 +37,11 @@ class Inst(Enum):
     POP           = 0x57
     DUP           = 0x59
     IADD          = 0x60
+    IREM          = 0x70
     IINC          = 0x84
+    IFNE          = 0x9A
     IF_ICMPGE     = 0xA2
+    IF_ICMPGT     = 0xA3
     GOTO          = 0xA7
     IRET          = 0xAC
     RETURN        = 0xB1
@@ -154,6 +157,10 @@ class Machine:
                 frame.stack.append(val)
             elif inst == Inst.IADD:
                 frame.stack.append(frame.stack.pop() + frame.stack.pop())
+            elif inst == Inst.IREM:
+                v2 = frame.stack.pop()
+                v1 = frame.stack.pop()
+                frame.stack.append(v1 % v2)
             elif inst == Inst.IINC:
                 ip += 1
                 index, const = struct.unpack('!Bb', code[ip:ip+2])
@@ -161,6 +168,17 @@ class Machine:
 
                 #print('iinc', index, const)
                 frame.set_local(index, frame.get_local(index) + const)
+            elif inst == Inst.IFNE:
+                v1 = frame.stack.pop()
+
+                ip += 1
+                branch = struct.unpack('!h', code[ip:ip+2])[0]
+
+                if v1 != 0:
+                    ip -= 2
+                    ip += branch
+                else:
+                    ip += 1
             elif inst == Inst.IF_ICMPGE:
                 v2 = frame.stack.pop()
                 v1 = frame.stack.pop()
@@ -174,7 +192,19 @@ class Machine:
                     ip += branch
                 else:
                     ip += 1
+            elif inst == Inst.IF_ICMPGT:
+                v2 = frame.stack.pop()
+                v1 = frame.stack.pop()
 
+                ip += 1
+                branch = struct.unpack('!h', code[ip:ip+2])[0]
+                #print('cmp', branch)
+
+                if v1 > v2:
+                    ip -= 2
+                    ip += branch
+                else:
+                    ip += 1
             elif inst == Inst.GOTO:
                 ip += 1
                 branch = struct.unpack('!h', code[ip:ip+2])[0]
