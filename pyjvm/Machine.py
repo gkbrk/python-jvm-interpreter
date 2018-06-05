@@ -68,6 +68,101 @@ def argumentCount(desc):
 
     return i
 
+def read_unsigned_short(frame):
+    val = struct.unpack('!H', frame.code[frame.ip+1:frame.ip+3])[0]
+    frame.ip += 2
+    return val
+
+def read_signed_short(frame):
+    val = struct.unpack('!h', frame.code[frame.ip+1:frame.ip+3])[0]
+    frame.ip += 2
+    return val
+
+def read_byte(frame):
+    frame.ip += 1
+    return frame.code[frame.ip]
+
+def read_signed_byte(frame):
+    frame.ip += 1
+    signed = struct.unpack('!b', frame.code[frame.ip:frame.ip+1])[0]
+    return signed
+
+OPCODES = {}
+
+def opcode(inst):
+    def inner(fn):
+        OPCODES[inst] = fn
+        return fn
+
+    return inner
+
+@opcode(Inst.ICONST_M1)
+def iconst_m1(frame):
+    frame.push(-1)
+
+@opcode(Inst.ICONST_0)
+def iconst_0(frame):
+    frame.push(0)
+
+@opcode(Inst.ICONST_1)
+def iconst_1(frame):
+    frame.push(1)
+
+@opcode(Inst.ICONST_2)
+def iconst_2(frame):
+    frame.push(2)
+
+@opcode(Inst.ICONST_3)
+def iconst_3(frame):
+    frame.push(3)
+
+@opcode(Inst.ICONST_4)
+def iconst_4(frame):
+    frame.push(4)
+
+@opcode(Inst.ICONST_5)
+def iconst_5(frame):
+    frame.push(5)
+
+@opcode(Inst.BIPUSH)
+def bipush(frame):
+    val = read_byte(frame)
+    frame.push(val)
+
+@opcode(Inst.SIPUSH)
+def sipush(frame):
+    val = read_signed_short(frame)
+    frame.push(val)
+
+@opcode(Inst.ILOAD_0)
+@opcode(Inst.ALOAD_0)
+def iload_0(frame):
+    frame.push(frame.get_local(0))
+
+@opcode(Inst.ILOAD_1)
+@opcode(Inst.ALOAD_1)
+def iload_1(frame):
+    frame.push(frame.get_local(1))
+
+@opcode(Inst.ILOAD_2)
+@opcode(Inst.ALOAD_2)
+def iload_2(frame):
+    frame.push(frame.get_local(2))
+
+@opcode(Inst.ILOAD_3)
+def iload_3(frame):
+    frame.push(frame.get_local(3))
+
+@opcode(Inst.POP)
+def pop(frame):
+    frame.pop()
+
+@opcode(Inst.DUP)
+def dup(frame):
+    val = frame.pop()
+    frame.push(val)
+    frame.push(val)
+
 class Machine:
     def __init__(self):
         self.class_files = {}
@@ -76,56 +171,18 @@ class Machine:
         c = ClassFile().from_file(path)
         self.class_files[c.class_name] = c
 
-    def execute_code(self, frame, code):
-        ip = 0
+    def execute_code(self, frame):
+        code = frame.code
         while True:
-            inst = Inst(code[ip])
-            #print(inst)
+            inst = Inst(code[frame.ip])
+            #print(frame.ip, inst)
 
-            if inst == Inst.ICONST_M1:
-                frame.stack.append(-1)
-            elif inst == Inst.ICONST_0:
-                frame.stack.append(0)
-            elif inst == Inst.ICONST_1:
-                frame.stack.append(1)
-            elif inst == Inst.ICONST_2:
-                frame.stack.append(2)
-            elif inst == Inst.ICONST_3:
-                frame.stack.append(3)
-            elif inst == Inst.ICONST_4:
-                frame.stack.append(4)
-            elif inst == Inst.ICONST_5:
-                frame.stack.append(5)
-            elif inst == Inst.BIPUSH:
-                ip += 1
-                byte = code[ip]
-
-                frame.stack.append(byte)
-            elif inst == Inst.SIPUSH:
-                ip += 1
-                short = struct.unpack('!h', code[ip:ip+2])[0]
-                ip += 1
-
-                frame.stack.append(short)
+            if inst in OPCODES:
+                OPCODES[inst](frame)
             elif inst == Inst.LDC:
-                ip += 1
-                index = code[ip]
+                index = read_byte(frame)
 
                 frame.stack.append(frame.current_class.const_pool[index - 1].string)
-            elif inst == Inst.ILOAD_0:
-                frame.stack.append(frame.get_local(0))
-            elif inst == Inst.ILOAD_1:
-                frame.stack.append(frame.get_local(1))
-            elif inst == Inst.ILOAD_2:
-                frame.stack.append(frame.get_local(2))
-            elif inst == Inst.ILOAD_3:
-                frame.stack.append(frame.get_local(3))
-            elif inst == Inst.ALOAD_0:
-                frame.stack.append(frame.get_local(0))
-            elif inst == Inst.ALOAD_1:
-                frame.stack.append(frame.get_local(1))
-            elif inst == Inst.ALOAD_2:
-                frame.stack.append(frame.get_local(2))
             elif inst == Inst.ISTORE_0:
                 val = frame.stack.pop()
                 frame.set_local(0, val)
@@ -144,12 +201,6 @@ class Machine:
             elif inst == Inst.ASTORE_1:
                 obj = frame.stack.pop()
                 frame.set_local(1, obj)
-            elif inst == Inst.POP:
-                frame.stack.pop()
-            elif inst == Inst.DUP:
-                val = frame.stack.pop()
-                frame.stack.append(val)
-                frame.stack.append(val)
             elif inst == Inst.IADD:
                 frame.stack.append(frame.stack.pop() + frame.stack.pop())
             elif inst == Inst.IREM:
@@ -157,64 +208,47 @@ class Machine:
                 v1 = frame.stack.pop()
                 frame.stack.append(v1 % v2)
             elif inst == Inst.IINC:
-                ip += 1
-                index, const = struct.unpack('!Bb', code[ip:ip+2])
-                ip += 1
+                index = read_byte(frame)
+                const = read_signed_byte(frame)
 
-                #print('iinc', index, const)
                 frame.set_local(index, frame.get_local(index) + const)
             elif inst == Inst.IFNE:
                 v1 = frame.stack.pop()
 
-                ip += 1
-                branch = struct.unpack('!h', code[ip:ip+2])[0]
+                branch = read_signed_short(frame)
 
                 if v1 != 0:
-                    ip -= 2
-                    ip += branch
-                else:
-                    ip += 1
+                    frame.ip -= 3
+                    frame.ip += branch
             elif inst == Inst.IF_ICMPGE:
                 v2 = frame.stack.pop()
                 v1 = frame.stack.pop()
 
-                ip += 1
-                branch = struct.unpack('!h', code[ip:ip+2])[0]
-                #print('cmp', branch)
+                branch = read_signed_short(frame)
 
                 if v1 >= v2:
-                    ip -= 2
-                    ip += branch
-                else:
-                    ip += 1
+                    frame.ip -= 3
+                    frame.ip += branch
             elif inst == Inst.IF_ICMPGT:
                 v2 = frame.stack.pop()
                 v1 = frame.stack.pop()
 
-                ip += 1
-                branch = struct.unpack('!h', code[ip:ip+2])[0]
-                #print('cmp', branch)
+                branch = read_signed_short(frame)
 
                 if v1 > v2:
-                    ip -= 2
-                    ip += branch
-                else:
-                    ip += 1
+                    frame.ip -= 3
+                    frame.ip += branch
             elif inst == Inst.GOTO:
-                ip += 1
-                branch = struct.unpack('!h', code[ip:ip+2])[0]
+                branch = read_signed_short(frame)
 
-                ip -= 2
-                ip += branch
-                #print('goto', branch)
+                frame.ip -= 3
+                frame.ip += branch
             elif inst == Inst.IRET:
                 return frame.stack.pop()
             elif inst == Inst.RETURN:
                 return
             elif inst == Inst.GETSTATIC:
-                ip += 1
-                index = struct.unpack('!H', code[ip:ip+2])[0]
-                ip += 1
+                index = read_unsigned_short(frame)
 
                 methodRef = frame.current_class.const_pool[index - 1]
                 name = frame.current_class.const_pool[methodRef.class_index - 1].name
@@ -225,16 +259,14 @@ class Machine:
                     cl = self.class_files[name]
                     if not cl.initialized:
                         cl.initialized = True
-                        cl.handleMethod('<clinit>', '()V', frame, code, self, ip)
+                        cl.handleMethod('<clinit>', '()V', frame)
                     frame.stack.append(cl.get_field(nat.name))
 
                 #print(name)
                 #print(vars(nat))
                 #frame.stack.append(PrintStream())
             elif inst == Inst.PUTSTATIC:
-                ip += 1
-                index = struct.unpack('!H', code[ip:ip+2])[0]
-                ip += 1
+                index = read_unsigned_short(frame)
 
                 methodRef = frame.current_class.const_pool[index - 1]
                 name = frame.current_class.const_pool[methodRef.class_index - 1].name
@@ -248,9 +280,7 @@ class Machine:
                         cl.handleMethod('<clinit>', '()V', frame, code, self, ip)
                     cl.set_field(nat.name, frame.stack.pop())
             elif inst == Inst.GETFIELD:
-                ip += 1
-                index = struct.unpack('!H', code[ip:ip+2])[0]
-                ip += 1
+                index = read_unsigned_short(frame)
 
                 ref = frame.current_class.const_pool[index - 1]
                 name = frame.current_class.const_pool[ref.class_index - 1].name
@@ -263,9 +293,7 @@ class Machine:
                 #print(obj)
                 frame.stack.append(obj.get_field(nat.name))
             elif inst == Inst.PUTFIELD:
-                ip += 1
-                index = struct.unpack('!H', code[ip:ip+2])[0]
-                ip += 1
+                index = read_unsigned_short(frame)
 
                 ref = frame.current_class.const_pool[index - 1]
                 name = frame.current_class.const_pool[ref.class_index - 1].name
@@ -278,9 +306,7 @@ class Machine:
                 obj = frame.stack.pop()
                 obj.set_field(nat.name, value)
             elif inst == Inst.INVOKEVIRTUAL:
-                ip += 1
-                index = struct.unpack('!H', code[ip:ip+2])[0]
-                ip += 1
+                index = read_unsigned_short(frame)
 
                 methodRef = frame.current_class.const_pool[index - 1]
                 name = frame.current_class.const_pool[methodRef.class_index - 1].name
@@ -293,15 +319,13 @@ class Machine:
                 if name in self.class_files:
                     cl = self.class_files[name]
                     if cl.canHandleMethod(nat.name, nat.desc):
-                        cl.handleMethod(nat.name, nat.desc, frame, code, self, ip)
+                        cl.handleMethod(nat.name, nat.desc, frame)
                 else:
                     for i in range(argumentCount(nat.desc)):
                         frame.stack.pop()
                     frame.stack.pop()
             elif inst == Inst.INVOKESPECIAL:
-                ip += 1
-                index = struct.unpack('!H', code[ip:ip+2])[0]
-                ip += 1
+                index = read_unsigned_short(frame)
 
                 methodRef = frame.current_class.const_pool[index - 1]
                 name = frame.current_class.const_pool[methodRef.class_index - 1].name
@@ -318,18 +342,16 @@ class Machine:
                         if m.name == nat.name and m.desc == nat.desc:
                             newCode = m.find_attr('Code').info
                             newCode = CodeAttr().from_reader(io.BytesIO(newCode))
-                            newFrame = Frame(newCode.max_stack, newCode.max_locals, cl)
+                            newFrame = Frame(newCode, cl, self)
 
                             for i in range(argumentCount(nat.desc)):
                                 newFrame.set_local(i, frame.stack.pop())
 
-                            frame.stack.append(self.execute_code(newFrame, newCode.code))
+                            self.execute_code(newFrame)
             elif inst == Inst.INVOKESTATIC:
-                ip += 1
-                method_index = struct.unpack('!H', code[ip:ip+2])[0]
-                ip += 1
+                index = read_unsigned_short(frame)
 
-                methodRef = frame.current_class.const_pool[method_index - 1]
+                methodRef = frame.current_class.const_pool[index - 1]
                 cname = frame.current_class.const_pool[methodRef.class_index - 1].name
                 natIndex = methodRef.name_and_type_index
                 nat = frame.current_class.const_pool[natIndex - 1]
@@ -341,12 +363,10 @@ class Machine:
                 if cname in self.class_files:
                     cl = self.class_files[cname]
                     if cl.canHandleMethod(nat.name, nat.desc):
-                        cl.handleMethod(nat.name, nat.desc, frame, code, self, ip)
+                        cl.handleMethod(nat.name, nat.desc, frame)
             elif inst == Inst.NEW:
-                ip += 1
-                index = struct.unpack('!H', code[ip:ip+2])[0]
-                ip += 1
-
+                index = read_unsigned_short(frame)
+                
                 methodRef = frame.current_class.const_pool[index - 1]
 
                 if methodRef.name in self.class_files:
@@ -357,11 +377,8 @@ class Machine:
                 else:
                     frame.stack.append(None)
 
-                #print(vars(methodRef))
-
             #print(frame.stack, frame.locals)
-
-            ip += 1
+            frame.ip += 1
 
     def call_function(self, methodName, *args):
         cname = '/'.join(methodName.split('/')[:-1])
@@ -374,10 +391,10 @@ class Machine:
                     code = m.find_attr('Code').info
                     code = CodeAttr().from_reader(io.BytesIO(code))
 
-                    frame = Frame(code.max_stack, code.max_locals, cf)
+                    frame = Frame(code, cf, self)
                     for i, arg in enumerate(args):
                         frame.set_local(i, arg)
-                    return self.execute_code(frame, code.code)
+                    return self.execute_code(frame)
 
     def dump(self):
         print('Machine Dump')

@@ -32,17 +32,17 @@ class ClassFile(JavaClass):
             if m.name == name and m.desc == desc:
                 return True
 
-    def handleMethod(self, name, desc, frame, code, machine, ip):
+    def handleMethod(self, name, desc, frame):
         for m in self.methods:
             if m.name == name and m.desc == desc:
                 newCode = m.find_attr('Code').info
                 newCode = CodeAttr().from_reader(io.BytesIO(newCode))
-                newFrame = Frame(newCode.max_stack, newCode.max_locals, self)
+                newFrame = Frame(newCode, self, frame.machine)
 
                 for i in range(argumentCount(desc)):
                     newFrame.set_local(i, frame.stack.pop())
 
-                frame.stack.append(machine.execute_code(newFrame, newCode.code))
+                frame.machine.execute_code(newFrame)
 
     def from_file(self, path):
         self.file_path = path

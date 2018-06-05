@@ -9,10 +9,7 @@ class Hello {
     public static void main(String[] args) {
         TestImport.runA();
         TestImport.runA();
-
-        int a = Rng.generate();
-        System.out.println(a);
-
+        TestImport.runA();
         TestImport t = new TestImport();
         for (int i = 0; i < 5; i++) {
             System.out.println("Test " + i);

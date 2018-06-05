@@ -24,7 +24,8 @@ class PrintStream(JavaClass):
     def canHandleMethod(self, name, desc):
         return name == 'println'
 
-    def handleMethod(self, name, desc, frame, code, machine, ip):
+    def handleMethod(self, name, desc, frame):
         if name == 'println':
             for i in range(argumentCount(desc)):
                 print(frame.stack.pop())
+            frame.stack.pop()

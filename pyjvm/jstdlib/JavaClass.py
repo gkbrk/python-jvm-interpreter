@@ -24,5 +24,5 @@ class JavaClass:
     def canHandleMethod(self, name, desc):
         return False
 
-    def handleMethod(self, name, desc, frame, code, machine, ip):
+    def handleMethod(self, name, desc, frame):
         pass
