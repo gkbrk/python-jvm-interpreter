@@ -1,10 +1,7 @@
 from .ClassFile import ClassFile
 from .CodeAttr import CodeAttr
 from .Frame import Frame
-from .jstdlib.JavaClass import JavaClass
-from .jstdlib.PrintStream import PrintStream
-from .jstdlib.StringBuilder import StringBuilder
-from .jstdlib.System import System
+
 import struct
 import io
 from enum import Enum
@@ -73,11 +70,6 @@ def argumentCount(desc):
 class Machine:
     def __init__(self):
         self.class_files = {}
-
-        self.class_files['java/lang/Object'] = JavaClass()
-        self.class_files['java/io/PrintStream'] = PrintStream()
-        self.class_files['java/lang/StringBuilder'] = StringBuilder()
-        self.class_files['java/lang/System'] = System()
 
     def load_class_file(self, path):
         c = ClassFile().from_file(path)

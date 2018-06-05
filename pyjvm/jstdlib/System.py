@@ -4,6 +4,7 @@ from .PrintStream import PrintStream
 class System(JavaClass):
     def __init__(self):
         super().__init__()
+        self.class_name = 'java/lang/System'
         self.instance_fields['out'] = PrintStream()
 
     def canHandleMethod(self, name, desc):
