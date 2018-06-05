@@ -23,6 +23,7 @@ class Inst(Enum):
     ILOAD_3       = 0x1D
     ALOAD_0       = 0x2A
     ALOAD_1       = 0x2B
+    ALOAD_2       = 0x2C
     ISTORE_0      = 0x3B
     ISTORE_1      = 0x3C
     ISTORE_2      = 0x3D
@@ -123,6 +124,8 @@ class Machine:
                 frame.stack.append(frame.get_local(0))
             elif inst == Inst.ALOAD_1:
                 frame.stack.append(frame.get_local(1))
+            elif inst == Inst.ALOAD_2:
+                frame.stack.append(frame.get_local(2))
             elif inst == Inst.ISTORE_0:
                 val = frame.stack.pop()
                 frame.set_local(0, val)
@@ -335,17 +338,10 @@ class Machine:
                 #print(vars(nat))
                 #print(cname)
 
-                cl = self.class_files[cname]
-                for m in cl.methods:
-                    if m.name == nat.name and m.desc == nat.desc:
-                        newCode = m.find_attr('Code').info
-                        newCode = CodeAttr().from_reader(io.BytesIO(newCode))
-                        newFrame = Frame(newCode.max_stack, newCode.max_locals, cl)
-
-                        for i in range(argumentCount(nat.desc)):
-                            newFrame.set_local(i, frame.stack.pop())
-
-                        frame.stack.append(self.execute_code(newFrame, newCode.code))
+                if cname in self.class_files:
+                    cl = self.class_files[cname]
+                    if cl.canHandleMethod(nat.name, nat.desc):
+                        cl.handleMethod(nat.name, nat.desc, frame, code, self, ip)
             elif inst == Inst.NEW:
                 ip += 1
                 index = struct.unpack('!H', code[ip:ip+2])[0]

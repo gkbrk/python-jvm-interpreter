@@ -1,6 +1,7 @@
 package com.gkbrk.JVMTest;
 
 import com.gkbrk.JVMTest.TestImport;
+import jstdlib.Rng;
 
 class Hello {
     public static final String greeting = "Hi";
@@ -8,9 +9,10 @@ class Hello {
     public static void main(String[] args) {
         TestImport.runA();
         TestImport.runA();
-        TestImport.runA();
-        TestImport.runA();
-        TestImport.runA();
+
+        int a = Rng.generate();
+        System.out.println(a);
+
         TestImport t = new TestImport();
         for (int i = 0; i < 5; i++) {
             System.out.println("Test " + i);
@@ -18,7 +20,7 @@ class Hello {
         t.test();
         t.test();
         t.test();
-        fizzbuzz();
+        //fizzbuzz();
     }
 
     public static int addNumbers(int a, int b) {

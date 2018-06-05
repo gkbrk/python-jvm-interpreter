@@ -28,4 +28,3 @@ class PrintStream(JavaClass):
         if name == 'println':
             for i in range(argumentCount(desc)):
                 print(frame.stack.pop())
-            stream = frame.stack.pop()
