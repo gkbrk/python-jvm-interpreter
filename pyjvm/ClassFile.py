@@ -42,7 +42,9 @@ class ClassFile(JavaClass):
                 for i in range(argumentCount(desc)):
                     newFrame.set_local(i, frame.stack.pop())
 
-                frame.machine.execute_code(newFrame)
+                ret = frame.machine.execute_code(newFrame)
+                if not desc.endswith('V'):
+                    return ret
 
     def from_file(self, path):
         self.file_path = path

@@ -35,6 +35,7 @@ class Inst(Enum):
     POP           = 0x57
     DUP           = 0x59
     IADD          = 0x60
+    IMUL          = 0x68
     IREM          = 0x70
     IINC          = 0x84
     IFNE          = 0x9A
@@ -162,6 +163,12 @@ def dup(frame):
     val = frame.pop()
     frame.push(val)
     frame.push(val)
+
+@opcode(Inst.IMUL)
+def imul(frame):
+    val2 = frame.pop()
+    val1 = frame.pop()
+    frame.push(val2 * val1)
 
 class Machine:
     def __init__(self):
@@ -363,7 +370,9 @@ class Machine:
                 if cname in self.class_files:
                     cl = self.class_files[cname]
                     if cl.canHandleMethod(nat.name, nat.desc):
-                        cl.handleMethod(nat.name, nat.desc, frame)
+                        ret = cl.handleMethod(nat.name, nat.desc, frame)
+                        if ret is not None:
+                            frame.push(ret)
             elif inst == Inst.NEW:
                 index = read_unsigned_short(frame)
                 
