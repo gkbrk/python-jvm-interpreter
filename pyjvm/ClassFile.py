@@ -28,11 +28,14 @@ class ClassFile(JavaClass):
         super().__init__()
 
     def canHandleMethod(self, name, desc):
+        if super().canHandleMethod(name, desc):
+            return True
         for m in self.methods:
             if m.name == name and m.desc == desc:
                 return True
 
     def handleMethod(self, name, desc, frame):
+        super().handleMethod(name, desc, frame)
         for m in self.methods:
             if m.name == name and m.desc == desc:
                 newCode = m.find_attr('Code').info

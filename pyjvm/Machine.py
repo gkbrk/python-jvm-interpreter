@@ -264,8 +264,8 @@ class Machine:
 
                 if name in self.class_files:
                     cl = self.class_files[name]
-                    if not cl.initialized:
-                        cl.initialized = True
+                    if not cl.static_initialized:
+                        cl.static_initialized = True
                         cl.handleMethod('<clinit>', '()V', frame)
                     frame.stack.append(cl.get_field(nat.name))
 
@@ -282,8 +282,8 @@ class Machine:
 
                 if name in self.class_files:
                     cl = self.class_files[name]
-                    if not cl.initialized:
-                        cl.initialized = True
+                    if not cl.static_initialized:
+                        cl.static_initialized = True
                         cl.handleMethod('<clinit>', '()V', frame, code, self, ip)
                     cl.set_field(nat.name, frame.stack.pop())
             elif inst == Inst.GETFIELD:
@@ -345,16 +345,10 @@ class Machine:
 
                 if name in self.class_files:
                     cl = self.class_files[name]
-                    for m in cl.methods:
-                        if m.name == nat.name and m.desc == nat.desc:
-                            newCode = m.find_attr('Code').info
-                            newCode = CodeAttr().from_reader(io.BytesIO(newCode))
-                            newFrame = Frame(newCode, cl, self)
-
-                            for i in range(argumentCount(nat.desc)):
-                                newFrame.set_local(i, frame.stack.pop())
-
-                            self.execute_code(newFrame)
+                    if cl.canHandleMethod(nat.name, nat.desc):
+                        ret = cl.handleMethod(nat.name, nat.desc, frame)
+                        if ret is not None:
+                            frame.push(ret)
             elif inst == Inst.INVOKESTATIC:
                 index = read_unsigned_short(frame)
 
@@ -382,6 +376,9 @@ class Machine:
                     obj = self.class_files[methodRef.name].__class__()
                     if self.class_files[methodRef.name].file_path:
                         obj.from_file(self.class_files[methodRef.name].file_path)
+
+                    obj.python_initialize()
+
                     frame.stack.append(obj)
                 else:
                     frame.stack.append(None)

@@ -7,10 +7,14 @@ class JavaClass:
         self.instance_fields = {}
         self.file_path = None
         self.class_name = 'java/lang/Object'
+        self.static_initialized = False
         self.initialized = False
 
     def name(self):
         return self.class_name
+
+    def python_initialize(self, *args):
+        pass
 
     def __repr__(self):
         return '<{} - {}>'.format(self.name(), self.instance_fields)
@@ -22,7 +26,7 @@ class JavaClass:
         self.instance_fields[name] = value
 
     def canHandleMethod(self, name, desc):
-        return False
+        pass
 
     def handleMethod(self, name, desc, frame):
         pass

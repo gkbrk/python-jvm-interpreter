@@ -22,7 +22,7 @@ class PrintStream(JavaClass):
         self.class_name = 'java/io/PrintStream'
 
     def canHandleMethod(self, name, desc):
-        return name == 'println'
+        return name in ['println']
 
     def handleMethod(self, name, desc, frame):
         if name == 'println':
