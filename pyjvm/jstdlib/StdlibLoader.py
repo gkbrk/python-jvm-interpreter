@@ -3,13 +3,15 @@ from .PrintStream import PrintStream
 from .StringBuilder import StringBuilder
 from .Rng import Rng
 from .System import System
+from .String import String
 
 libs = [
   JavaClass(),
   PrintStream(),
   StringBuilder(),
   System(),
-  Rng()
+  Rng(),
+  String()
 ]
 
 def load_stdlib_classes(machine):

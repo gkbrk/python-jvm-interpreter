@@ -11,10 +11,11 @@ load_stdlib_classes(m)
 m.load_class_file('example/Hello.class')
 m.load_class_file('example/TestImport.class')
 m.load_class_file('example/IntegerTest.class')
+m.load_class_file('example/Rot13.class')
 
 # Dump machine state
 m.dump()
 
 print(m.call_function('com/gkbrk/JVMTest/Hello/main', []))
 print(m.call_function('jvmtest/IntegerTest/doubleNum', 11))
-#print(m.call_function('com/gkbrk/JVMTest/Hello/subtractNum', 12, 10))
+print(m.call_function('jvmtest/Rot13/main', []))

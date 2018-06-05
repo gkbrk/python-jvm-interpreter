@@ -17,6 +17,7 @@ class Inst(Enum):
     BIPUSH        = 0x10
     SIPUSH        = 0x11
     LDC           = 0x12
+    ILOAD         = 0x15
     ILOAD_0       = 0x1A
     ILOAD_1       = 0x1B
     ILOAD_2       = 0x1C
@@ -24,6 +25,7 @@ class Inst(Enum):
     ALOAD_0       = 0x2A
     ALOAD_1       = 0x2B
     ALOAD_2       = 0x2C
+    ISTORE        = 0x36
     ISTORE_0      = 0x3B
     ISTORE_1      = 0x3C
     ISTORE_2      = 0x3D
@@ -35,14 +37,18 @@ class Inst(Enum):
     POP           = 0x57
     DUP           = 0x59
     IADD          = 0x60
+    ISUB          = 0x64
     IMUL          = 0x68
     IREM          = 0x70
     IINC          = 0x84
+    I2C           = 0x92
     IFNE          = 0x9A
+    IF_ICMPLT     = 0xA1
     IF_ICMPGE     = 0xA2
     IF_ICMPGT     = 0xA3
     GOTO          = 0xA7
     IRET          = 0xAC
+    ARETURN       = 0xB0
     RETURN        = 0xB1
     GETSTATIC     = 0xB2
     PUTSTATIC     = 0xB3
@@ -135,6 +141,11 @@ def sipush(frame):
     val = read_signed_short(frame)
     frame.push(val)
 
+@opcode(Inst.ILOAD)
+def iload(frame):
+    index = read_byte(frame)
+    frame.push(frame.get_local(index))
+
 @opcode(Inst.ILOAD_0)
 @opcode(Inst.ALOAD_0)
 def iload_0(frame):
@@ -154,6 +165,12 @@ def iload_2(frame):
 def iload_3(frame):
     frame.push(frame.get_local(3))
 
+@opcode(Inst.ISTORE)
+def istore(frame):
+    index = read_byte(frame)
+    val = frame.stack.pop()
+    frame.set_local(index, val)
+
 @opcode(Inst.POP)
 def pop(frame):
     frame.pop()
@@ -164,11 +181,28 @@ def dup(frame):
     frame.push(val)
     frame.push(val)
 
+@opcode(Inst.ISUB)
+def isub(frame):
+    val2 = frame.pop()
+    val1 = frame.pop()
+
+    if type(val1) is str and len(val1) == 1:
+        val1 = ord(val1)
+
+    if type(val2) is str and len(val2) == 1:
+        val2 = ord(val2)
+
+    frame.push(val1 - val2)
+
 @opcode(Inst.IMUL)
 def imul(frame):
     val2 = frame.pop()
     val1 = frame.pop()
     frame.push(val2 * val1)
+
+@opcode(Inst.I2C)
+def i2c(frame):
+    frame.push(chr(frame.pop()))
 
 class Machine:
     def __init__(self):
@@ -208,6 +242,9 @@ class Machine:
             elif inst == Inst.ASTORE_1:
                 obj = frame.stack.pop()
                 frame.set_local(1, obj)
+            elif inst == Inst.ASTORE_2:
+                obj = frame.stack.pop()
+                frame.set_local(2, obj)
             elif inst == Inst.IADD:
                 frame.stack.append(frame.stack.pop() + frame.stack.pop())
             elif inst == Inst.IREM:
@@ -227,11 +264,32 @@ class Machine:
                 if v1 != 0:
                     frame.ip -= 3
                     frame.ip += branch
+            elif inst == Inst.IF_ICMPLT:
+                v2 = frame.stack.pop()
+                v1 = frame.stack.pop()
+
+                branch = read_signed_short(frame)
+
+                if type(v1) is str and len(v1) == 1:
+                    v1 = ord(v1)
+
+                if type(v2) is str and len(v2) == 1:
+                    v2 = ord(v2)
+
+                if v1 < v2:
+                    frame.ip -= 3
+                    frame.ip += branch
             elif inst == Inst.IF_ICMPGE:
                 v2 = frame.stack.pop()
                 v1 = frame.stack.pop()
 
                 branch = read_signed_short(frame)
+
+                if type(v1) is str and len(v1) == 1:
+                    v1 = ord(v1)
+
+                if type(v2) is str and len(v2) == 1:
+                    v2 = ord(v2)
 
                 if v1 >= v2:
                     frame.ip -= 3
@@ -242,6 +300,12 @@ class Machine:
 
                 branch = read_signed_short(frame)
 
+                if type(v1) is str and len(v1) == 1:
+                    v1 = ord(v1)
+
+                if type(v2) is str and len(v2) == 1:
+                    v2 = ord(v2)
+
                 if v1 > v2:
                     frame.ip -= 3
                     frame.ip += branch
@@ -251,6 +315,8 @@ class Machine:
                 frame.ip -= 3
                 frame.ip += branch
             elif inst == Inst.IRET:
+                return frame.stack.pop()
+            elif inst == Inst.ARETURN:
                 return frame.stack.pop()
             elif inst == Inst.RETURN:
                 return
@@ -390,8 +456,8 @@ class Machine:
         cname = '/'.join(methodName.split('/')[:-1])
         mname = methodName.split('/')[-1]
 
-        for cn in self.class_files:
-            cf = self.class_files[cn]
+        if cname in self.class_files:
+            cf = self.class_files[cname]
             for m in cf.methods:
                 if m.name == mname:
                     code = m.find_attr('Code').info

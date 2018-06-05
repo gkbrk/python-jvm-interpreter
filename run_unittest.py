@@ -41,5 +41,17 @@ class JVMTest(unittest.TestCase):
             self.assertEqual(self.jvm
                 .call_function('jvmtest/IntegerTest/power', i), i * i)
 
+class Rot13Test(unittest.TestCase):
+    def setUp(self):
+        self.jvm = Machine()
+        load_stdlib_classes(self.jvm)
+        self.jvm.load_class_file('example/Rot13.class')
+
+    def test_rot13_hello_world(self):
+        self.assertEqual(self.jvm
+            .call_function('jvmtest/Rot13/rot13', 'Hello World!')
+                                                , 'Uryyb Jbeyq!')
+
+
 if __name__ == '__main__':
     unittest.main()
