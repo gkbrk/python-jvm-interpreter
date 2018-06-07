@@ -42,8 +42,10 @@ class ClassFile(JavaClass):
                 newCode = CodeAttr().from_reader(io.BytesIO(newCode))
                 newFrame = Frame(newCode, self, frame.machine)
 
-                for i in range(argumentCount(desc)):
+                for i in range(argumentCount(desc))[::-1]:
                     newFrame.set_local(i + 1, frame.stack.pop())
+
+                newFrame.set_local(0, frame.stack.pop())
 
                 ret = frame.machine.execute_code(newFrame)
                 if not desc.endswith('V'):

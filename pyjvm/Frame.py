@@ -6,6 +6,7 @@ class Frame:
         self.current_class = current_class
         self.ip = 0
         self.machine = machine
+        self.max_stack = code.max_stack
 
         self.set_local(0, current_class)
 

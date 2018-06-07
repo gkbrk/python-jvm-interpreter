@@ -218,6 +218,9 @@ class Machine:
             inst = Inst(code[frame.ip])
             #print(frame.ip, inst)
 
+            if len(frame.stack) > frame.max_stack + 1:
+                print("MAX STACK")
+
             if inst in OPCODES:
                 OPCODES[inst](frame)
             elif inst == Inst.LDC:
@@ -422,7 +425,7 @@ class Machine:
                     cl = self.class_files[name]
                     if cl.canHandleMethod(nat.name, nat.desc):
                         ret = cl.handleMethod(nat.name, nat.desc, frame)
-                        if ret is not None:
+                        if not nat.desc.endswith('V'):
                             frame.push(ret)
             elif inst == Inst.INVOKESTATIC:
                 index = read_unsigned_short(frame)
@@ -440,7 +443,7 @@ class Machine:
                     cl = self.class_files[cname]
                     if cl.canHandleMethod(nat.name, nat.desc):
                         ret = cl.handleStatic(nat.name, nat.desc, frame)
-                        if ret is not None:
+                        if not nat.desc.endswith('V'):
                             frame.push(ret)
             elif inst == Inst.NEW:
                 index = read_unsigned_short(frame)
