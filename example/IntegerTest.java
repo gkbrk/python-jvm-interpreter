@@ -32,4 +32,27 @@ class IntegerTest {
     public static int power(int a) {
         return a * a;
     }
+
+    public static int recursiveFibonacci(int n) {
+        return (n < 2) ? n : recursiveFibonacci(n - 1) 
+        + recursiveFibonacci(n - 2);
+    }
+
+    public static int iterativeFibonacci(int n) {
+        if (n < 2) {
+            return n;
+        }
+
+        int ans = 0;
+        int n1 = 0;
+        int n2 = 1;
+
+        for(n--; n > 0; n--) {
+            ans = n1 + n2;
+            n1 = n2;
+            n2 = ans;
+        }
+
+        return ans;
+    }
 }

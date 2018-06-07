@@ -41,6 +41,14 @@ class JVMTest(unittest.TestCase):
             self.assertEqual(self.jvm
                 .call_function('jvmtest/IntegerTest/power', i), i * i)
 
+    def test_iterative_fibonacci(self):
+        self.assertEqual(self.jvm
+            .call_function('jvmtest/IntegerTest/iterativeFibonacci', 20), 6765)
+
+    def test_recursive_fibonacci(self):
+        self.assertEqual(self.jvm
+            .call_function('jvmtest/IntegerTest/recursiveFibonacci', 7), 13)
+
 class Rot13Test(unittest.TestCase):
     def setUp(self):
         self.jvm = Machine()
