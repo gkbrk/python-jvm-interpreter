@@ -392,7 +392,9 @@ class Machine:
                 if name in self.class_files:
                     cl = self.class_files[name]
                     if cl.canHandleMethod(nat.name, nat.desc):
-                        cl.handleMethod(nat.name, nat.desc, frame)
+                        ret = cl.handleMethod(nat.name, nat.desc, frame)
+                        if not nat.desc.endswith('V'):
+                            frame.push(ret)
                 else:
                     for i in range(argumentCount(nat.desc)):
                         frame.stack.pop()
@@ -430,7 +432,7 @@ class Machine:
                 if cname in self.class_files:
                     cl = self.class_files[cname]
                     if cl.canHandleMethod(nat.name, nat.desc):
-                        ret = cl.handleMethod(nat.name, nat.desc, frame)
+                        ret = cl.handleStatic(nat.name, nat.desc, frame)
                         if ret is not None:
                             frame.push(ret)
             elif inst == Inst.NEW:

@@ -52,6 +52,16 @@ class Rot13Test(unittest.TestCase):
             .call_function('jvmtest/Rot13/rot13', 'Hello World!')
                                                 , 'Uryyb Jbeyq!')
 
+class InstanceTest(unittest.TestCase):
+    def setUp(self):
+        self.jvm = Machine()
+        load_stdlib_classes(self.jvm)
+        self.jvm.load_class_file('example/InstanceTest.class')
+
+    def test_single_instance(self):
+        self.assertEqual(self.jvm
+            .call_function('jvmtest/InstanceTest/test_single'), 12345)
+
 
 if __name__ == '__main__':
     unittest.main()

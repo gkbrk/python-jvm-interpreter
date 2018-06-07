@@ -43,6 +43,21 @@ class ClassFile(JavaClass):
                 newFrame = Frame(newCode, self, frame.machine)
 
                 for i in range(argumentCount(desc)):
+                    newFrame.set_local(i + 1, frame.stack.pop())
+
+                ret = frame.machine.execute_code(newFrame)
+                if not desc.endswith('V'):
+                    return ret
+
+    def handleStatic(self, name, desc, frame):
+        super().handleMethod(name, desc, frame)
+        for m in self.methods:
+            if m.name == name and m.desc == desc:
+                newCode = m.find_attr('Code').info
+                newCode = CodeAttr().from_reader(io.BytesIO(newCode))
+                newFrame = Frame(newCode, self, frame.machine)
+
+                for i in range(argumentCount(desc)):
                     newFrame.set_local(i, frame.stack.pop())
 
                 ret = frame.machine.execute_code(newFrame)

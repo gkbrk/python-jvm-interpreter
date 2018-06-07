@@ -30,3 +30,6 @@ class JavaClass:
 
     def handleMethod(self, name, desc, frame):
         pass
+
+    def handleStatic(self, name, desc, frame):
+        pass

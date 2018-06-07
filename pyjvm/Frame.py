@@ -7,6 +7,8 @@ class Frame:
         self.ip = 0
         self.machine = machine
 
+        self.set_local(0, current_class)
+
     def set_local(self, i, value):
         self.locals[i] = value
 
