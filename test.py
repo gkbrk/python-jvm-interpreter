@@ -19,5 +19,5 @@ m.dump()
 
 print(m.call_function('com/gkbrk/JVMTest/Hello/main', []))
 print(m.call_function('jvmtest/IntegerTest/doubleNum', 11))
-print(m.call_function('jvmtest/InstanceTest/test_single'))
 print(m.call_function('jvmtest/Rot13/rot13', 'Test'))
+print(m.call_function('jvmtest/InstanceTest/test_multiple_1'))

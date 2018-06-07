@@ -22,4 +22,24 @@ class InstanceTest {
 
         return i.get_num();
     }
+
+    public static int test_multiple_1() {
+        InstanceTest i1 = new InstanceTest();
+        InstanceTest i2 = new InstanceTest();
+
+        i1.set_num(12345);
+        i2.set_num(54321);
+
+        return i1.get_num();
+    }
+
+    public static int test_multiple_2() {
+        InstanceTest i1 = new InstanceTest();
+        InstanceTest i2 = new InstanceTest();
+
+        i1.set_num(12345);
+        i2.set_num(54321);
+
+        return i2.get_num();
+    }
 }

@@ -223,7 +223,14 @@ class Machine:
             elif inst == Inst.LDC:
                 index = read_byte(frame)
 
-                frame.stack.append(frame.current_class.const_pool[index - 1].string)
+                const = frame.current_class.const_pool[index - 1]
+
+                if 'integer' in const.__dict__:
+                    const = const.integer
+                else:
+                    const = const.string
+
+                frame.stack.append(const)
             elif inst == Inst.ISTORE_0:
                 val = frame.stack.pop()
                 frame.set_local(0, val)

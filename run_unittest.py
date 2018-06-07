@@ -62,6 +62,14 @@ class InstanceTest(unittest.TestCase):
         self.assertEqual(self.jvm
             .call_function('jvmtest/InstanceTest/test_single'), 12345)
 
+    def test_multiple_instance_1(self):
+        self.assertEqual(self.jvm
+            .call_function('jvmtest/InstanceTest/test_multiple_1'), 12345)
+
+    def test_multiple_instance_2(self):
+        self.assertEqual(self.jvm
+            .call_function('jvmtest/InstanceTest/test_multiple_2'), 54321)
+
 
 if __name__ == '__main__':
     unittest.main()
