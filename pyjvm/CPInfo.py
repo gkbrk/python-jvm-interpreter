@@ -7,6 +7,7 @@ class CPTag(Enum):
     METHODREF   = 10
     STRING      = 8
     INTEGER     = 3
+    DOUBLE      = 6
     NAMEANDTYPE = 12
     UTF8        = 1
 
@@ -28,6 +29,8 @@ class CPInfo:
             self.parse_string(r)
         elif self.tag == CPTag.INTEGER:
             self.parse_integer(r)
+        elif self.tag == CPTag.DOUBLE:
+            self.parse_double(r)
         elif self.tag == CPTag.NAMEANDTYPE:
             self.parse_nameandtype(r)
         elif self.tag == CPTag.UTF8:
@@ -47,6 +50,9 @@ class CPInfo:
 
     def parse_integer(self, r):
         self.integer = struct.unpack('!i', r.read(4))[0]
+
+    def parse_double(self, r):
+        self.double = struct.unpack('!d', r.read(8))[0]
 
     def parse_nameandtype(self, r):
         self.name_index = struct.unpack('!H', r.read(2))[0]

@@ -1,5 +1,5 @@
 import struct
-from .CPInfo import CPInfo
+from .CPInfo import CPInfo, CPTag
 from .CodeAttr import CodeAttr
 from .Frame import Frame
 from .FieldInfo import FieldInfo
@@ -75,9 +75,16 @@ class ClassFile(JavaClass):
             const_count = struct.unpack('!H', cf.read(2))[0]
             self.const_pool = []
 
-            for i in range(const_count - 1):
+            i = 1
+            while i < const_count:
                 c = CPInfo().from_reader(cf)
                 self.const_pool.append(c)
+
+                if c.tag == CPTag.DOUBLE:
+                    self.const_pool.append(CPInfo())
+                    i += 1
+
+                i += 1
 
             self.replace_indexes(self.const_pool)
 

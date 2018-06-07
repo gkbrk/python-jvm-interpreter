@@ -4,6 +4,7 @@ from .StringBuilder import StringBuilder
 from .Rng import Rng
 from .System import System
 from .String import String
+from .Math import Math
 
 libs = [
   JavaClass(),
@@ -11,7 +12,8 @@ libs = [
   StringBuilder(),
   System(),
   Rng(),
-  String()
+  String(),
+  Math()
 ]
 
 def load_stdlib_classes(machine):

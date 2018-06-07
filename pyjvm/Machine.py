@@ -16,11 +16,15 @@ class Inst(Enum):
     ICONST_5      = 0x08
     LCONST_0      = 0x09
     LCONST_1      = 0x0A
+    DCONST_0      = 0x0E
+    DCONST_1      = 0x0F
     BIPUSH        = 0x10
     SIPUSH        = 0x11
     LDC           = 0x12
+    LDC2_W        = 0x14
     ILOAD         = 0x15
     LLOAD         = 0x16
+    DLOAD         = 0x18
     ILOAD_0       = 0x1A
     ILOAD_1       = 0x1B
     ILOAD_2       = 0x1C
@@ -29,11 +33,13 @@ class Inst(Enum):
     LLOAD_1       = 0x1F
     LLOAD_2       = 0x20
     LLOAD_3       = 0x21
+    DLOAD_3       = 0x29
     ALOAD_0       = 0x2A
     ALOAD_1       = 0x2B
     ALOAD_2       = 0x2C
     ISTORE        = 0x36
     LSTORE        = 0x37
+    DSTORE        = 0x39
     ISTORE_0      = 0x3B
     ISTORE_1      = 0x3C
     ISTORE_2      = 0x3D
@@ -42,6 +48,7 @@ class Inst(Enum):
     LSTORE_1      = 0x40
     LSTORE_2      = 0x41
     LSTORE_3      = 0x42
+    DSTORE_3      = 0x4A
     ASTORE_0      = 0x4B
     ASTORE_1      = 0x4C
     ASTORE_2      = 0x4D
@@ -50,12 +57,19 @@ class Inst(Enum):
     DUP           = 0x59
     IADD          = 0x60
     LADD          = 0x61
+    DADD          = 0x63
     ISUB          = 0x64
+    DSUB          = 0x67
     IMUL          = 0x68
+    DMUL          = 0x6B
+    DDIV          = 0x6F
     IREM          = 0x70
     IINC          = 0x84
+    I2D           = 0x87
     I2C           = 0x92
+    DCMPG         = 0x98
     IFNE          = 0x9A
+    IFGE          = 0x9C
     IFLE          = 0x9E
     IF_ICMPLT     = 0xA1
     IF_ICMPGE     = 0xA2
@@ -63,6 +77,7 @@ class Inst(Enum):
     GOTO          = 0xA7
     IRET          = 0xAC
     LRET          = 0xAD
+    DRETURN       = 0xAF
     ARETURN       = 0xB0
     RETURN        = 0xB1
     GETSTATIC     = 0xB2
@@ -148,6 +163,14 @@ def iconst_4(frame):
 def iconst_5(frame):
     frame.push(5)
 
+@opcode(Inst.DCONST_0)
+def dconst_0(frame):
+    frame.push(0.0)
+
+@opcode(Inst.DCONST_1)
+def dconst_1(frame):
+    frame.push(1.0)
+
 @opcode(Inst.BIPUSH)
 def bipush(frame):
     val = read_byte(frame)
@@ -158,8 +181,28 @@ def sipush(frame):
     val = read_signed_short(frame)
     frame.push(val)
 
+@opcode(Inst.LDC)
+def ldc(frame):
+    index = read_byte(frame)
+    const = frame.current_class.const_pool[index - 1]
+
+    if 'integer' in const.__dict__:
+        const = const.integer
+    else:
+        const = const.string
+
+    frame.push(const)
+
+@opcode(Inst.LDC2_W)
+def ldc2_w(frame):
+    index = read_unsigned_short(frame)
+    const = frame.current_class.const_pool[index - 1].double
+
+    frame.push(const)
+
 @opcode(Inst.ILOAD)
 @opcode(Inst.LLOAD)
+@opcode(Inst.DLOAD)
 def iload(frame):
     index = read_byte(frame)
     frame.push(frame.get_local(index))
@@ -184,11 +227,13 @@ def iload_2(frame):
 
 @opcode(Inst.ILOAD_3)
 @opcode(Inst.LLOAD_3)
+@opcode(Inst.DLOAD_3)
 def iload_3(frame):
     frame.push(frame.get_local(3))
 
 @opcode(Inst.ISTORE)
 @opcode(Inst.LSTORE)
+@opcode(Inst.DSTORE)
 def istore(frame):
     index = read_byte(frame)
     val = frame.pop()
@@ -210,6 +255,7 @@ def lstore_2(frame):
     frame.set_local(1, val)
 
 @opcode(Inst.LSTORE_3)
+@opcode(Inst.DSTORE_3)
 def lstore_3(frame):
     val = frame.pop()
     frame.set_local(3, val)
@@ -226,10 +272,12 @@ def dup(frame):
 
 @opcode(Inst.IADD)
 @opcode(Inst.LADD)
+@opcode(Inst.DADD)
 def iadd(frame):
     frame.push(frame.pop() + frame.pop())
 
 @opcode(Inst.ISUB)
+@opcode(Inst.DSUB)
 def isub(frame):
     val2 = frame.pop()
     val1 = frame.pop()
@@ -243,14 +291,37 @@ def isub(frame):
     frame.push(val1 - val2)
 
 @opcode(Inst.IMUL)
+@opcode(Inst.DMUL)
 def imul(frame):
     val2 = frame.pop()
     val1 = frame.pop()
     frame.push(val2 * val1)
 
+@opcode(Inst.DDIV)
+def ddiv(frame):
+    val2 = frame.pop()
+    val1 = frame.pop()
+    frame.push(val1 / val2)
+
+@opcode(Inst.I2D)
+def i2d(frame):
+    frame.push(float(frame.pop()))
+
 @opcode(Inst.I2C)
 def i2c(frame):
     frame.push(chr(frame.pop()))
+
+@opcode(Inst.DCMPG)
+def dcmpg(frame):
+    val2 = frame.pop()
+    val1 = frame.pop()
+
+    if val1 > val2:
+        frame.push(1)
+    elif val1 == val2:
+        frame.push(0)
+    else:
+        frame.push(-1)
 
 class Machine:
     def __init__(self):
@@ -271,17 +342,6 @@ class Machine:
 
             if inst in OPCODES:
                 OPCODES[inst](frame)
-            elif inst == Inst.LDC:
-                index = read_byte(frame)
-
-                const = frame.current_class.const_pool[index - 1]
-
-                if 'integer' in const.__dict__:
-                    const = const.integer
-                else:
-                    const = const.string
-
-                frame.stack.append(const)
             elif inst == Inst.ISTORE_0:
                 val = frame.stack.pop()
                 frame.set_local(0, val)
@@ -318,6 +378,14 @@ class Machine:
                 branch = read_signed_short(frame)
 
                 if v1 != 0:
+                    frame.ip -= 3
+                    frame.ip += branch
+            elif inst == Inst.IFGE:
+                v1 = frame.stack.pop()
+
+                branch = read_signed_short(frame)
+
+                if v1 >= 0:
                     frame.ip -= 3
                     frame.ip += branch
             elif inst == Inst.IFLE:
@@ -378,7 +446,7 @@ class Machine:
 
                 frame.ip -= 3
                 frame.ip += branch
-            elif inst == Inst.IRET or inst == Inst.LRET or inst == Inst.ARETURN:
+            elif inst == Inst.IRET or inst == Inst.LRET or inst == Inst.ARETURN or inst == Inst.DRETURN:
                 return frame.stack.pop()
             elif inst == Inst.RETURN:
                 return
