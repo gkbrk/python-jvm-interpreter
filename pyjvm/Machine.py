@@ -436,6 +436,16 @@ class Machine:
             frame.ip -= 3
             frame.ip += branch
 
+    @opcode(Inst.IFLE)
+    def do_IFLE(self, frame):
+        v1 = frame.stack.pop()
+
+        branch = read_signed_short(frame)
+
+        if v1 <= 0:
+            frame.ip -= 3
+            frame.ip += branch
+
     @opcode(Inst.ISTORE_1)
     def do_ISTORE_1(self, frame):
         val = frame.stack.pop()
@@ -445,6 +455,11 @@ class Machine:
     def do_ISTORE_2(self, frame):
         val = frame.stack.pop()
         frame.set_local(2, val)
+
+    @opcode(Inst.ISTORE_3)
+    def do_ISTORE_3(self, frame):
+        val = frame.stack.pop()
+        frame.set_local(3, val)
 
     def execute_code(self, frame):
         code = frame.code
@@ -459,19 +474,20 @@ class Machine:
             try:
                 func = OPCODES[inst]
             except KeyError:
-                print(f"Searching for inst: {inst}")
+                pass
             else:
                 func(self, frame)
                 # print(frame.stack, frame.locals)
                 frame.ip += 1
                 continue
 
+            # Instructions that break out of the current loop can't be converted to methods
+            if inst in {Inst.IRET, Inst.LRET, Inst.ARETURN, Inst.DRETURN}:
+                return frame.stack.pop()
+
             if inst == Inst.ISTORE_0:
                 val = frame.stack.pop()
                 frame.set_local(0, val)
-            elif inst == Inst.ISTORE_3:
-                val = frame.stack.pop()
-                frame.set_local(3, val)
             elif inst == Inst.ASTORE_0:
                 obj = frame.stack.pop()
                 frame.set_local(0, obj)
@@ -491,14 +507,6 @@ class Machine:
                 branch = read_signed_short(frame)
 
                 if v1 != 0:
-                    frame.ip -= 3
-                    frame.ip += branch
-            elif inst == Inst.IFLE:
-                v1 = frame.stack.pop()
-
-                branch = read_signed_short(frame)
-
-                if v1 <= 0:
                     frame.ip -= 3
                     frame.ip += branch
             elif inst == Inst.IF_ICMPLT:
@@ -531,8 +539,6 @@ class Machine:
                 if v1 > v2:
                     frame.ip -= 3
                     frame.ip += branch
-            elif inst in {Inst.IRET, Inst.LRET, Inst.ARETURN, Inst.DRETURN}:
-                return frame.stack.pop()
             elif inst == Inst.RETURN:
                 return
             elif inst == Inst.GETSTATIC:
