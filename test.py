@@ -2,19 +2,29 @@
 from pyjvm.Machine import Machine
 from pyjvm.jstdlib.StdlibLoader import load_stdlib_classes
 
+TEST = "monteCarloPi"
+RUNS = 10
+
+tests = {
+    "iterativeFibonacci": (
+        "example/IntegerTest.class",
+        "jvmtest/IntegerTest/iterativeFibonacci",
+        100,
+    ),
+    "monteCarloPi": ("example/Hello.class", "com/gkbrk/JVMTest/Hello/monteCarloPi", 5000),
+}
+
 m = Machine()
 
 # Load stdlib
 load_stdlib_classes(m)
 
 # Load local classes
-m.load_class_file('example/Hello.class')
-#m.load_class_file('example/TestImport.class')
-#m.load_class_file('example/IntegerTest.class')
-#m.load_class_file('example/Rot13.class')
-#m.load_class_file('example/InstanceTest.class')
+class_name, func, args = tests[TEST]
+m.load_class_file(class_name)
 
 # Dump machine state
-#m.dump()
+# m.dump()
 
-print(m.call_function('com/gkbrk/JVMTest/Hello/monteCarloPi', 5000))
+for i in range(RUNS):
+    print(m.call_function(func, args))
