@@ -455,8 +455,12 @@ class Machine:
             # if len(frame.stack) > frame.max_stack + 1:
             #    print("MAX STACK")
 
-            if inst in OPCODES:
-                OPCODES[inst](self, frame)
+            try:
+                func = OPCODES[inst]
+            except KeyError:
+                pass
+            else:
+                func(self, frame)
                 # print(frame.stack, frame.locals)
                 frame.ip += 1
                 continue
@@ -528,12 +532,7 @@ class Machine:
                 if v1 > v2:
                     frame.ip -= 3
                     frame.ip += branch
-            elif (
-                inst == Inst.IRET
-                or inst == Inst.LRET
-                or inst == Inst.ARETURN
-                or inst == Inst.DRETURN
-            ):
+            elif inst in {Inst.IRET, Inst.LRET, Inst.ARETURN, Inst.DRETURN}:
                 return frame.stack.pop()
             elif inst == Inst.RETURN:
                 return
