@@ -143,66 +143,66 @@ def opcode(inst):
 
 
 @opcode(Inst.ICONST_M1)
-def iconst_m1(frame):
+def iconst_m1(instance, frame):
     frame.push(-1)
 
 
 @opcode(Inst.ICONST_0)
 @opcode(Inst.LCONST_0)
-def iconst_0(frame):
+def iconst_0(instance, frame):
     frame.push(0)
 
 
 @opcode(Inst.ICONST_1)
 @opcode(Inst.LCONST_1)
-def iconst_1(frame):
+def iconst_1(instance, frame):
     frame.push(1)
 
 
 @opcode(Inst.ICONST_2)
-def iconst_2(frame):
+def iconst_2(instance, frame):
     frame.push(2)
 
 
 @opcode(Inst.ICONST_3)
-def iconst_3(frame):
+def iconst_3(instance, frame):
     frame.push(3)
 
 
 @opcode(Inst.ICONST_4)
-def iconst_4(frame):
+def iconst_4(instance, frame):
     frame.push(4)
 
 
 @opcode(Inst.ICONST_5)
-def iconst_5(frame):
+def iconst_5(instance, frame):
     frame.push(5)
 
 
 @opcode(Inst.DCONST_0)
-def dconst_0(frame):
+def dconst_0(instance, frame):
     frame.push(0.0)
 
 
 @opcode(Inst.DCONST_1)
-def dconst_1(frame):
+def dconst_1(instance, frame):
     frame.push(1.0)
 
 
 @opcode(Inst.BIPUSH)
-def bipush(frame):
+def bipush(instance, frame):
     val = read_byte(frame)
     frame.push(val)
 
 
 @opcode(Inst.SIPUSH)
-def sipush(frame):
+def sipush(instance, frame):
     val = read_signed_short(frame)
     frame.push(val)
 
 
 @opcode(Inst.LDC)
-def ldc(frame):
+def ldc(instance, frame):
     index = read_byte(frame)
     const = frame.current_class.const_pool[index - 1]
 
@@ -215,7 +215,7 @@ def ldc(frame):
 
 
 @opcode(Inst.LDC2_W)
-def ldc2_w(frame):
+def ldc2_w(instance, frame):
     index = read_unsigned_short(frame)
     const = frame.current_class.const_pool[index - 1].double
 
@@ -225,7 +225,7 @@ def ldc2_w(frame):
 @opcode(Inst.ILOAD)
 @opcode(Inst.LLOAD)
 @opcode(Inst.DLOAD)
-def iload(frame):
+def iload(instance, frame):
     index = read_byte(frame)
     frame.push(frame.get_local(index))
 
@@ -233,72 +233,72 @@ def iload(frame):
 @opcode(Inst.ILOAD_0)
 @opcode(Inst.LLOAD_0)
 @opcode(Inst.ALOAD_0)
-def iload_0(frame):
+def iload_0(instance, frame):
     frame.push(frame.get_local(0))
 
 
 @opcode(Inst.ILOAD_1)
 @opcode(Inst.LLOAD_1)
 @opcode(Inst.ALOAD_1)
-def iload_1(frame):
+def iload_1(instance, frame):
     frame.push(frame.get_local(1))
 
 
 @opcode(Inst.ILOAD_2)
 @opcode(Inst.LLOAD_2)
 @opcode(Inst.ALOAD_2)
-def iload_2(frame):
+def iload_2(instance, frame):
     frame.push(frame.get_local(2))
 
 
 @opcode(Inst.ILOAD_3)
 @opcode(Inst.LLOAD_3)
 @opcode(Inst.DLOAD_3)
-def iload_3(frame):
+def iload_3(instance, frame):
     frame.push(frame.get_local(3))
 
 
 @opcode(Inst.ISTORE)
 @opcode(Inst.LSTORE)
 @opcode(Inst.DSTORE)
-def istore(frame):
+def istore(instance, frame):
     index = read_byte(frame)
     val = frame.pop()
     frame.set_local(index, val)
 
 
 @opcode(Inst.LSTORE_0)
-def lstore_0(frame):
+def lstore_0(instance, frame):
     val = frame.pop()
     frame.set_local(0, val)
 
 
 @opcode(Inst.LSTORE_1)
-def lstore_1(frame):
+def lstore_1(instance, frame):
     val = frame.pop()
     frame.set_local(1, val)
 
 
 @opcode(Inst.LSTORE_2)
-def lstore_2(frame):
+def lstore_2(instance, frame):
     val = frame.pop()
     frame.set_local(1, val)
 
 
 @opcode(Inst.LSTORE_3)
 @opcode(Inst.DSTORE_3)
-def lstore_3(frame):
+def lstore_3(instance, frame):
     val = frame.pop()
     frame.set_local(3, val)
 
 
 @opcode(Inst.POP)
-def pop(frame):
+def pop(instance, frame):
     frame.pop()
 
 
 @opcode(Inst.DUP)
-def dup(frame):
+def dup(instance, frame):
     val = frame.pop()
     frame.push(val)
     frame.push(val)
@@ -307,13 +307,13 @@ def dup(frame):
 @opcode(Inst.IADD)
 @opcode(Inst.LADD)
 @opcode(Inst.DADD)
-def iadd(frame):
+def iadd(instance, frame):
     frame.push(frame.pop() + frame.pop())
 
 
 @opcode(Inst.ISUB)
 @opcode(Inst.DSUB)
-def isub(frame):
+def isub(instance, frame):
     val2 = frame.pop()
     val1 = frame.pop()
 
@@ -328,31 +328,31 @@ def isub(frame):
 
 @opcode(Inst.IMUL)
 @opcode(Inst.DMUL)
-def imul(frame):
+def imul(instance, frame):
     val2 = frame.pop()
     val1 = frame.pop()
     frame.push(val2 * val1)
 
 
 @opcode(Inst.DDIV)
-def ddiv(frame):
+def ddiv(instance, frame):
     val2 = frame.pop()
     val1 = frame.pop()
     frame.push(val1 / val2)
 
 
 @opcode(Inst.I2D)
-def i2d(frame):
+def i2d(instance, frame):
     frame.push(float(frame.pop()))
 
 
 @opcode(Inst.I2C)
-def i2c(frame):
+def i2c(instance, frame):
     frame.push(chr(frame.pop()))
 
 
 @opcode(Inst.DCMPG)
-def dcmpg(frame):
+def dcmpg(instance, frame):
     val2 = frame.pop()
     val1 = frame.pop()
 
@@ -367,19 +367,28 @@ def dcmpg(frame):
 class Machine:
     def __init__(self):
         self.class_files = {}
-        # This is ugly and just for demonstration. Don't really do this like this.
-        OPCODES.update({Inst.INVOKESTATIC: self.do_INVOKESTATIC, Inst.IINC: self.do_IINC})
 
     def load_class_file(self, path):
         c = ClassFile().from_file(path)
         self.class_files[c.class_name] = c
 
+    # Instructions defined as methods because they affect the machine state
+
+    @opcode(Inst.GOTO)
+    def do_GOTO(self, frame):
+        branch = read_signed_short(frame)
+
+        frame.ip -= 3
+        frame.ip += branch
+
+    @opcode(Inst.IINC)
     def do_IINC(self, frame):
         index = read_byte(frame)
         const = read_signed_byte(frame)
 
         frame.set_local(index, frame.get_local(index) + const)
 
+    @opcode(Inst.INVOKESTATIC)
     def do_INVOKESTATIC(self, frame):
         index = read_unsigned_short(frame)
 
@@ -399,6 +408,43 @@ class Machine:
                 if not nat.desc.endswith("V"):
                     frame.push(ret)
 
+    @opcode(Inst.IF_ICMPGE)
+    def do_IF_ICMPGE(self, frame):
+        v2 = frame.stack.pop()
+        v1 = frame.stack.pop()
+
+        branch = read_signed_short(frame)
+
+        if type(v1) is str and len(v1) == 1:
+            v1 = ord(v1)
+
+        if type(v2) is str and len(v2) == 1:
+            v2 = ord(v2)
+
+        if v1 >= v2:
+            frame.ip -= 3
+            frame.ip += branch
+
+    @opcode(Inst.IFGE)
+    def do_IFGE(self, frame):
+        v1 = frame.stack.pop()
+
+        branch = read_signed_short(frame)
+
+        if v1 >= 0:
+            frame.ip -= 3
+            frame.ip += branch
+
+    @opcode(Inst.ISTORE_1)
+    def do_ISTORE_1(self, frame):
+        val = frame.stack.pop()
+        frame.set_local(1, val)
+
+    @opcode(Inst.ISTORE_2)
+    def do_ISTORE_2(self, frame):
+        val = frame.stack.pop()
+        frame.set_local(2, val)
+
     def execute_code(self, frame):
         code = frame.code
 
@@ -410,25 +456,16 @@ class Machine:
             #    print("MAX STACK")
 
             if inst in OPCODES:
-                OPCODES[inst](frame)
+                OPCODES[inst](self, frame)
                 # print(frame.stack, frame.locals)
                 frame.ip += 1
                 continue
 
-            if inst == Inst.GOTO:
-                branch = read_signed_short(frame)
+            print(f"inst: {inst}")
 
-                frame.ip -= 3
-                frame.ip += branch
-            elif inst == Inst.ISTORE_0:
+            if inst == Inst.ISTORE_0:
                 val = frame.stack.pop()
                 frame.set_local(0, val)
-            elif inst == Inst.ISTORE_1:
-                val = frame.stack.pop()
-                frame.set_local(1, val)
-            elif inst == Inst.ISTORE_2:
-                val = frame.stack.pop()
-                frame.set_local(2, val)
             elif inst == Inst.ISTORE_3:
                 val = frame.stack.pop()
                 frame.set_local(3, val)
@@ -453,14 +490,6 @@ class Machine:
                 if v1 != 0:
                     frame.ip -= 3
                     frame.ip += branch
-            elif inst == Inst.IFGE:
-                v1 = frame.stack.pop()
-
-                branch = read_signed_short(frame)
-
-                if v1 >= 0:
-                    frame.ip -= 3
-                    frame.ip += branch
             elif inst == Inst.IFLE:
                 v1 = frame.stack.pop()
 
@@ -482,21 +511,6 @@ class Machine:
                     v2 = ord(v2)
 
                 if v1 < v2:
-                    frame.ip -= 3
-                    frame.ip += branch
-            elif inst == Inst.IF_ICMPGE:
-                v2 = frame.stack.pop()
-                v1 = frame.stack.pop()
-
-                branch = read_signed_short(frame)
-
-                if type(v1) is str and len(v1) == 1:
-                    v1 = ord(v1)
-
-                if type(v2) is str and len(v2) == 1:
-                    v2 = ord(v2)
-
-                if v1 >= v2:
                     frame.ip -= 3
                     frame.ip += branch
             elif inst == Inst.IF_ICMPGT:
