@@ -1,6 +1,7 @@
 from .ClassFile import ClassFile
 from .CodeAttr import CodeAttr
 from .Frame import Frame
+from . import exceptions
 
 import struct
 import io
@@ -458,14 +459,12 @@ class Machine:
             try:
                 func = OPCODES[inst]
             except KeyError:
-                pass
+                print(f"Searching for inst: {inst}")
             else:
                 func(self, frame)
                 # print(frame.stack, frame.locals)
                 frame.ip += 1
                 continue
-
-            print(f"inst: {inst}")
 
             if inst == Inst.ISTORE_0:
                 val = frame.stack.pop()
@@ -653,20 +652,24 @@ class Machine:
             frame.ip += 1
 
     def call_function(self, methodName, *args):
-        cname = "/".join(methodName.split("/")[:-1])
-        mname = methodName.split("/")[-1]
+        cname, _, mname = methodName.rpartition("/")
 
-        if cname in self.class_files:
-            cf = self.class_files[cname]
-            for m in cf.methods:
-                if m.name == mname:
-                    code = m.find_attr("Code").info
-                    code = CodeAttr().from_reader(io.BytesIO(code))
+        try:
+            class_file = self.class_files[cname]
+        except KeyError as exc:
+            raise exceptions.UnknownClass(cname) from exc
 
-                    frame = Frame(code, cf, self)
-                    for i, arg in enumerate(args):
-                        frame.set_local(i, arg)
-                    return self.execute_code(frame)
+        for m in class_file.methods:
+            if m.name == mname:
+                code = m.find_attr("Code").info
+                code = CodeAttr().from_reader(io.BytesIO(code))
+
+                frame = Frame(code, class_file, self)
+                for i, arg in enumerate(args):
+                    frame.set_local(i, arg)
+                return self.execute_code(frame)
+        else:
+            raise exceptions.UnknownFunction(mname)
 
     def dump(self):
         print("Machine Dump")
