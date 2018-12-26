@@ -353,8 +353,9 @@ class Machine:
             inst = Inst(code[frame.ip])
             #print(frame.ip, inst)
 
-            #if len(frame.stack) > frame.max_stack + 1:
-            #    print("MAX STACK")
+            if len(frame.stack) > frame.max_stack + 1:
+                print("MAX STACK")
+                break
 
             if inst in OPCODES:
                 OPCODES[inst](frame)
@@ -582,8 +583,9 @@ class Machine:
                     cl = self.class_files[name]
                     if cl.canHandleMethod(nat.name, nat.desc):
                         ret = cl.handleMethod(nat.name, nat.desc, frame)
-                        if not nat.desc.endswith('V'):
-                            frame.push(ret)
+                    else:
+                        frame.stack.pop()
+                        
             elif inst == Inst.INVOKESTATIC:
                 index = read_unsigned_short(frame)
 

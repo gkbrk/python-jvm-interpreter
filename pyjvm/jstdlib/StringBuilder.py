@@ -9,7 +9,10 @@ class StringBuilder(JavaClass):
         self.string = ''
 
     def canHandleMethod(self, name, desc):
-        return name in ['append', 'toString']
+        if name == '<init>' and desc == '(Ljava/lang/String;)V':
+            return True
+        
+        return name in ['append', 'toString', 'reverse']
 
     def handleMethod(self, name, desc, frame):
         super().handleMethod(name, desc, frame)
@@ -18,9 +21,14 @@ class StringBuilder(JavaClass):
             v1 = frame.stack.pop()
             v1.string += v2
             return v1
-            #frame.stack.append(v1)
         elif name == 'toString':
             v1 = frame.stack.pop()
-            frame.stack.pop()
-            #frame.stack.append(v1.string)
             return v1.string
+        elif name == 'reverse':
+            v1 = frame.stack.pop()
+            v1.string = v1.string[::-1]
+            return v1
+        elif name == '<init>' and desc == '(Ljava/lang/String;)V':
+            s = frame.stack.pop()
+            v1 = frame.stack.pop()
+            v1.string = s

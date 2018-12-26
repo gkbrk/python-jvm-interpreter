@@ -1,8 +1,8 @@
 package jvmtest;
 
-class Rot13 {
-    public static void main(String[] args) {
-        System.out.println(rot13("Gb trg gb gur bgure fvqr!"));
+class StringTest {
+    public static String reverseString(String s) {
+        return new StringBuilder(s).reverse().toString();
     }
 
     public static String rot13(String str) {

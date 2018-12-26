@@ -17,7 +17,7 @@ class JavaClass:
         pass
 
     def __repr__(self):
-        return '<{} - {}>'.format(self.name(), self.instance_fields)
+        return f'<{self.name()} - {self.instance_fields}>'
 
     def get_field(self, name):
         return self.instance_fields[name]
