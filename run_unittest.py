@@ -78,6 +78,17 @@ class InstanceTest(unittest.TestCase):
         self.assertEqual(self.jvm
             .call_function('jvmtest/InstanceTest/test_multiple_2'), 54321)
 
+class ArrayTest(unittest.TestCase):
+    def setUp(self):
+        self.jvm = Machine()
+        load_stdlib_classes(self.jvm)
+        self.jvm.load_class_file('example/ArrayTest.class')
+
+    def test_insertion_sort(self):
+        l = [4, 3, 5, 1]
+        r = self.jvm.call_function('jvmtest/ArrayTest/insertionSort', l)
+        self.assertEqual(r, None)
+        self.assertEqual(l, [1, 3, 4, 5])
 
 if __name__ == '__main__':
     unittest.main()

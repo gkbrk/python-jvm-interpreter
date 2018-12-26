@@ -37,6 +37,7 @@ class Inst(Enum):
     ALOAD_0       = 0x2A
     ALOAD_1       = 0x2B
     ALOAD_2       = 0x2C
+    IALOAD        = 0x2E
     ISTORE        = 0x36
     LSTORE        = 0x37
     DSTORE        = 0x39
@@ -53,6 +54,7 @@ class Inst(Enum):
     ASTORE_1      = 0x4C
     ASTORE_2      = 0x4D
     ASTORE_3      = 0x4E
+    IASTORE       = 0x4F
     POP           = 0x57
     DUP           = 0x59
     IADD          = 0x60
@@ -69,11 +71,13 @@ class Inst(Enum):
     I2C           = 0x92
     DCMPG         = 0x98
     IFNE          = 0x9A
+    IFLT          = 0x9B
     IFGE          = 0x9C
     IFLE          = 0x9E
     IF_ICMPLT     = 0xA1
     IF_ICMPGE     = 0xA2
     IF_ICMPGT     = 0xA3
+    IF_ICMPLE     = 0xA4
     GOTO          = 0xA7
     IRET          = 0xAC
     LRET          = 0xAD
@@ -88,6 +92,7 @@ class Inst(Enum):
     INVOKESPECIAL = 0xB7
     INVOKESTATIC  = 0xB8
     NEW           = 0xBB
+    ARRAYLENGTH   = 0xBE
 
 def argumentCount(desc):
     arg = desc.split(')', 2)[0][1:]
@@ -225,6 +230,12 @@ def iload_1(frame):
 def iload_2(frame):
     frame.push(frame.get_local(2))
 
+@opcode(Inst.IALOAD)
+def iaload(frame):
+    index = frame.pop()
+    array = frame.pop()
+    frame.push(array[index])
+
 @opcode(Inst.ILOAD_3)
 @opcode(Inst.LLOAD_3)
 @opcode(Inst.DLOAD_3)
@@ -323,6 +334,11 @@ def dcmpg(frame):
     else:
         frame.push(-1)
 
+@opcode(Inst.ARRAYLENGTH)
+def arraylength(frame):
+    array = frame.pop()
+    frame.push(len(array))
+
 class Machine:
     def __init__(self):
         self.class_files = {}
@@ -363,6 +379,12 @@ class Machine:
             elif inst == Inst.ASTORE_2:
                 obj = frame.stack.pop()
                 frame.set_local(2, obj)
+            elif inst == Inst.IASTORE:
+                val = frame.stack.pop()
+                index = frame.stack.pop()
+                array = frame.stack.pop()
+
+                array[index] = val
             elif inst == Inst.IREM:
                 v2 = frame.stack.pop()
                 v1 = frame.stack.pop()
@@ -378,6 +400,13 @@ class Machine:
                 branch = read_signed_short(frame)
 
                 if v1 != 0:
+                    frame.ip -= 3
+                    frame.ip += branch
+            elif inst == Inst.IFLT:
+                v1 = frame.stack.pop()
+                branch = read_signed_short(frame)
+
+                if v1 < 0:
                     frame.ip -= 3
                     frame.ip += branch
             elif inst == Inst.IFGE:
@@ -439,6 +468,14 @@ class Machine:
                     v2 = ord(v2)
 
                 if v1 > v2:
+                    frame.ip -= 3
+                    frame.ip += branch
+            elif inst == Inst.IF_ICMPLE:
+                v2 = frame.stack.pop()
+                v1 = frame.stack.pop()
+                branch = read_signed_short(frame)
+
+                if v1 <= v2:
                     frame.ip -= 3
                     frame.ip += branch
             elif inst == Inst.GOTO:
