@@ -50,4 +50,18 @@ class ArrayTest {
         }
         return total;
     }
+
+    public static String loopMultipleArray() {
+        StringBuilder result = new StringBuilder();
+        
+        String[] a = {"a","b","c"};
+        String[] b = {"A","B","C"};
+        int[] c = {1,2,3};
+
+        for(int i = 0;i < a.length;i++){
+            result.append(a[i] + b[i] + c[i] + '\n');
+        }
+
+        return result.toString();
+    }
 }

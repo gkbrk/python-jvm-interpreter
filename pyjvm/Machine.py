@@ -37,7 +37,9 @@ class Inst(Enum):
     ALOAD_0       = 0x2A
     ALOAD_1       = 0x2B
     ALOAD_2       = 0x2C
+    ALOAD_3       = 0x2D
     IALOAD        = 0x2E
+    AALOAD        = 0x32
     ISTORE        = 0x36
     LSTORE        = 0x37
     DSTORE        = 0x39
@@ -55,6 +57,7 @@ class Inst(Enum):
     ASTORE_2      = 0x4D
     ASTORE_3      = 0x4E
     IASTORE       = 0x4F
+    AASTORE       = 0x53
     POP           = 0x57
     DUP           = 0x59
     IADD          = 0x60
@@ -92,6 +95,8 @@ class Inst(Enum):
     INVOKESPECIAL = 0xB7
     INVOKESTATIC  = 0xB8
     NEW           = 0xBB
+    NEWARRAY      = 0xBC
+    ANEWARRAY     = 0xBD
     ARRAYLENGTH   = 0xBE
 
 def argumentCount(desc):
@@ -230,6 +235,10 @@ def iload_1(frame):
 def iload_2(frame):
     frame.push(frame.get_local(2))
 
+@opcode(Inst.ALOAD_3)
+def aload_3(frame):
+    frame.push(frame.get_local(3))
+
 @opcode(Inst.IALOAD)
 def iaload(frame):
     index = frame.pop()
@@ -339,6 +348,28 @@ def arraylength(frame):
     array = frame.pop()
     frame.push(len(array))
 
+@opcode(Inst.ANEWARRAY)
+def anewarray(frame):
+    index = read_unsigned_short(frame)
+    ref = frame.current_class.const_pool[index - 1]
+
+    count = frame.pop()
+    frame.push(['' for _ in range(count)])
+
+@opcode(Inst.NEWARRAY)
+def newarray(frame):
+    array_type = read_byte(frame)
+    count = frame.pop()
+
+    frame.push([0 for _ in range(count)])
+
+@opcode(Inst.AALOAD)
+def aaload(frame):
+    index = frame.pop()
+    array = frame.pop()
+
+    frame.push(array[index])
+    
 class Machine:
     def __init__(self):
         self.class_files = {}
@@ -380,7 +411,10 @@ class Machine:
             elif inst == Inst.ASTORE_2:
                 obj = frame.stack.pop()
                 frame.set_local(2, obj)
-            elif inst == Inst.IASTORE:
+            elif inst == Inst.ASTORE_3:
+                obj = frame.stack.pop()
+                frame.set_local(3, obj)
+            elif inst == Inst.IASTORE or inst == Inst.AASTORE:
                 val = frame.stack.pop()
                 index = frame.stack.pop()
                 array = frame.stack.pop()

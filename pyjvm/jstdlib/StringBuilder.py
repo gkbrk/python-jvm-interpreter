@@ -17,7 +17,12 @@ class StringBuilder(JavaClass):
     def handleMethod(self, name, desc, frame):
         super().handleMethod(name, desc, frame)
         if name == 'append':
-            v2 = str(frame.stack.pop())
+            if desc.startswith('(C)'):
+                v2 = frame.stack.pop()
+                if type(v2) == int:
+                    v2 = chr(v2)
+            else:
+                v2 = str(frame.stack.pop())
             v1 = frame.stack.pop()
             v1.string += v2
             return v1

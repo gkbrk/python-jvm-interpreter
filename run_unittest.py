@@ -105,5 +105,9 @@ class ArrayTest(unittest.TestCase):
         r = self.jvm.call_function('jvmtest/ArrayTest/sum', l)
         self.assertEqual(r, sum(l))
 
+    def test_loop_multiple(self):
+        r = self.jvm.call_function('jvmtest/ArrayTest/loopMultipleArray')
+        self.assertEqual(r, 'aA1\nbB2\ncC3\n')
+
 if __name__ == '__main__':
     unittest.main()
