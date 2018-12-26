@@ -90,5 +90,16 @@ class ArrayTest(unittest.TestCase):
         self.assertEqual(r, None)
         self.assertEqual(l, [1, 3, 4, 5])
 
+    def test_cocktail_sort(self):
+        l = [4, 3, 5, 1]
+        r = self.jvm.call_function('jvmtest/ArrayTest/cocktailSort', l)
+        self.assertEqual(r, None)
+        self.assertEqual(l, [1, 3, 4, 5])
+
+    def test_sum(self):
+        l = [5, 5, 14, 3]
+        r = self.jvm.call_function('jvmtest/ArrayTest/sum', l)
+        self.assertEqual(r, sum(l))
+
 if __name__ == '__main__':
     unittest.main()
